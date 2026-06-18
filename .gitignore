@@ -34,6 +34,11 @@ htmlcov/
 # W&B
 wandb/
 
+# Environment
+.env
+.env.local
+.env.*.local
+
 # macOS
 .DS_Store
 

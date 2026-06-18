@@ -9,6 +9,7 @@ scipy>=1.10              # savitzky-golay (future RW-2 impl)
 
 # ── experiment tracking (optional; pipeline runs without it) ──────────────────
 wandb>=0.16
+python-dotenv>=1.0       # .env configuration
 
 # ── testing ───────────────────────────────────────────────────────────────────
 pytest>=7.0

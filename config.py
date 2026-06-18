@@ -7,9 +7,25 @@ Groups three concerns:
 
 The CEGAR numeric defaults (``k``, ``tau``) are PLACEHOLDERS pending Luis's
 notebook; see :mod:`cegar.residual_signals`.
+
+W&B configuration is read from environment variables (via .env file):
+  - WANDB_ENTITY: default "yoonmeehwang-carnegie-mellon-university"
+  - WANDB_PROJECT: default "RWML"
+  - WANDB_GROUP: optional group name
+  - WANDB_NAME: optional run name
+  - WANDB_MODE: "online" (default), "offline", or "disabled"
+  - WANDB_ENABLED: "1" to enable (default), "0" to disable
 """
+import os
 from dataclasses import dataclass, field, asdict
 from typing import Dict, Optional
+
+# Load .env file if it exists
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+except ImportError:
+    pass  # python-dotenv not installed; fall back to environment variables
 
 
 @dataclass
@@ -66,12 +82,12 @@ class CegarConfig:
 
 @dataclass
 class WandbConfig:
-    enabled: bool = True
-    entity: str = "yoonmeehwang-carnegie-mellon-university"
-    project: str = "RWML"
-    group: Optional[str] = None
-    name: Optional[str] = None
-    mode: str = "online"             # "online" | "offline" | "disabled"
+    enabled: bool = field(default_factory=lambda: os.getenv("WANDB_ENABLED", "1").lower() in ("1", "true", "yes"))
+    entity: str = field(default_factory=lambda: os.getenv("WANDB_ENTITY", "yoonmeehwang-carnegie-mellon-university"))
+    project: str = field(default_factory=lambda: os.getenv("WANDB_PROJECT", "RWML"))
+    group: Optional[str] = field(default_factory=lambda: os.getenv("WANDB_GROUP", None))
+    name: Optional[str] = field(default_factory=lambda: os.getenv("WANDB_NAME", None))
+    mode: str = field(default_factory=lambda: os.getenv("WANDB_MODE", "online"))  # "online" | "offline" | "disabled"
 
 
 @dataclass
