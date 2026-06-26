@@ -13,14 +13,18 @@ class Detector():
     def __init__(self):
         self.device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
 
-    def detect(self, predictedY: torch.Tensor, test_dataset: Dataset) -> np.ndarray:
-        predictedY = predictedY.to(self.device)
+    def detect(self, predictedY: torch.Tensor, test_dataset: Dataset, batch_size: int = 4096) -> np.ndarray:
+        loader = DataLoader(test_dataset, batch_size=batch_size, pin_memory=True)
+        offset = 0
+        scores_list = []
+        for _, test_y_batch in loader:
+            bs = test_y_batch.shape[0]
+            pred_batch = predictedY[offset:offset + bs].to(self.device)
+            test_y_batch = test_y_batch.to(self.device)
+            s = torch.sqrt(F.mse_loss(pred_batch.detach(), test_y_batch.detach(), reduction="none").sum(dim=[1, 2]))
+            scores_list.append(s.cpu())
+            offset += bs
 
-        _, test_y = next(iter(DataLoader(test_dataset, batch_size=predictedY.shape[0], pin_memory=True)))
-        test_y = test_y.to(self.device)
-
-        # calculate euclidian distance
-        anomaly_score = torch.sqrt(F.mse_loss(predictedY.detach(), test_y.detach(), reduction="none").sum(dim=[1, 2]))
-        # standardize error
+        anomaly_score = torch.cat(scores_list)
         anomaly_score = (anomaly_score - anomaly_score.mean()).abs() / anomaly_score.std()
-        return anomaly_score.cpu().numpy()
+        return anomaly_score.numpy()

@@ -125,4 +125,5 @@ def init_wandb(cfg: RWMLConfig):
         name=cfg.wandb.name,
         mode=cfg.wandb.mode,
         config=cfg.to_dict(),
+        reinit=True,
     )
