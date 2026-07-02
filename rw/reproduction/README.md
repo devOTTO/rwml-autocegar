@@ -18,7 +18,7 @@ Run (in TSB-AD repo): `sbatch submit_rw_algofaithful_full.sh`
 Config: `window=50, epochs=200, lr=8e-4, batch=256, correction_rate=0.1,
 activation=linear`.
 
-## RW-1 (Algorithm 2) — 🔧 fixed, best-HP sweep running
+## RW-1 (Algorithm 2) — ✅ reproduced (best-HP)
 
 `rw/cnn_rw.py`. The first rewrite was buggy (ReLU freeze + L1 collapse; see
 top-level README and `experiments/exp_e_algofaithful/`). After the fix
@@ -30,9 +30,19 @@ recover to paper level:
 | Genesis | 0.002 | **0.033** | 0.032 |
 | GECCO | 0.080 | **0.613** | 0.621 |
 
-Full reproduction = **best-HP per dataset** (sweep `l1_weight ∈ {1.0, 0.1,
-0.01, 0.001}` over all 180 files, take best AUC-PR per dataset), mirroring the
-paper's Table 6.5 reporting. The 4× full sweep is running; the aggregated
-`summary_rw1_besthp.csv` will be added here once
-`experiments/exp_e_algofaithful/combine_rw1_besthp.py` can run on the
-completed sweep dirs (`TSB-AD/eval/metrics/multi_rw1_l1sweep/`).
+Full reproduction = **best-HP per dataset**: sweep `l1_weight ∈ {1.0, 0.1,
+0.01, 0.001}` over all files, take best AUC-PR per dataset, mirroring the
+paper's Table 6.5 reporting. The 4× full sweep completed 2026-07-02
+(199 datasets × 4 λ, no failures):
+
+| metric | ours (best-HP) | paper (T6.1) |
+|---|---|---|
+| AUC-PR (mean) | **0.289** | 0.28 |
+| AUC-ROC (mean) | **0.725** | 0.75 |
+
+n = 199. Best-λ distribution: `0.001`×97, `0.1`×43, `0.01`×42, `1.0`×17.
+Files: `summary_rw1_besthp.csv` (per-dataset), `summary_rw1_besthp_per_family.csv`.
+
+Run (in TSB-AD repo): `for l in 1.0 0.1 0.01 0.001; do sbatch submit_rw1_l1sweep.sh $l; done`
+→ `eval/metrics/multi_rw1_l1sweep/l1_<λ>/CNN_RW/*.csv`, then aggregate with
+`experiments/exp_e_algofaithful/combine_rw1_besthp.py`.

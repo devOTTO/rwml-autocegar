@@ -31,7 +31,7 @@ rwml-autocegar/
     cnn_uns.py            RW    — paper Algorithm 1 (= TSB-AD CNN_uns.py)
     cnn_rw.py             RW-1  — paper Algorithm 2 (= TSB-AD CNN_RW.py, fixed)
     reproduction/         RW summaries + submit_rw.sh + README (RW AUC-PR 0.321;
-                          RW-1 best-HP sweep pending)
+                          RW-1 best-HP AUC-PR 0.289)
   autocegar/
     scale_grad.py         ScaleGrad autograd function
     gate.py               gate(confidence, wrongness)
@@ -64,7 +64,7 @@ correction_rate=0.1`; model = Adam, correction = RMSprop, epoch-wise update.
 |---|---|---|---|---|
 | DeepAnT (TSB-AD CNN) | 0.350 | 0.770 | 0.33 | ✅ reproduced |
 | RW | 0.321 | 0.703 | 0.29 (T6.1) / 0.34 (best-HP) | ✅ reproduced (per-dataset corr 0.99) |
-| RW-1 | in progress | — | 0.28 / 0.35 | 🔧 fixed, best-HP sweep running |
+| RW-1 | 0.289 | 0.725 | 0.28 (T6.1) / 0.35 (best-HP) | ✅ reproduced (best-HP, n=199) |
 
 Per-dataset / per-family numbers and the exact run scripts live in each
 method's `reproduction/` folder (`deepant/reproduction/`, `rw/reproduction/`,
