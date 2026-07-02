@@ -1,0 +1,6 @@
+data (16220, 18), anomalies 50
+Training CNN_RW (RW-1, Algorithm 2) model...
+RW-1 (plain)   AUC-PR=0.0139 AUC-ROC=0.7383
+Training CNN_RW_CEGAR (RW-1 + CEGAR gate)...
+RW-1+CEGAR     AUC-PR=0.0146 AUC-ROC=0.7393
+SMOKE OK

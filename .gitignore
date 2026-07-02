@@ -46,3 +46,9 @@ wandb/
 .vscode/
 .idea/
 *.cursor/
+
+# Local backups & SLURM logs (git history is the real backup)
+backup/
+logs/
+*.out
+*.err
