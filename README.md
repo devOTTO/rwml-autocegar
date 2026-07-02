@@ -13,6 +13,10 @@ self-contained) and the novel AutoCEGAR extension.
 
 ## Layout
 
+Each method folder holds the model code **plus a `reproduction/` subfolder**
+with the evidence (per-dataset & per-family summaries, the exact SLURM submit
+script, and a short README with the numbers vs the paper).
+
 ```
 rwml-autocegar/
   tsb_common/           vendored TSB-AD utils so the models run standalone
@@ -21,19 +25,25 @@ rwml-autocegar/
     dataset.py            ForecastDataset
   deepant/
     cnn.py                DeepAnT baseline  (= TSB-AD CNN.py)
+    reproduction/         summary_per_dataset.csv, summary_per_family.csv,
+                          submit_cnn.sh, README.md   (AUC-PR 0.350)
   rw/
     cnn_uns.py            RW    — paper Algorithm 1 (= TSB-AD CNN_uns.py)
     cnn_rw.py             RW-1  — paper Algorithm 2 (= TSB-AD CNN_RW.py, fixed)
+    reproduction/         RW summaries + submit_rw.sh + README (RW AUC-PR 0.321;
+                          RW-1 best-HP sweep pending)
   autocegar/
     scale_grad.py         ScaleGrad autograd function
     gate.py               gate(confidence, wrongness)
     controllers.py        tail-ratio lambda / valley-detection tau controllers
     residual_signals.py   ResidualStats + E_t/C_t (PLACEHOLDER formulas)
     rw_cegar.py           CNN_RW_CEGAR = reproduced RW-1 + CEGAR gate
+    reproduction/         smoke_result.txt + README (runs-end-to-end evidence)
   experiments/
     exp_e_algofaithful/   RW-1 diagnostics, L1-weight sweep, analysis scripts
   backup/                 pre-restructure standalone track + tsb_ad_models history
-  02_2025_FEUP_MSc_Afonso_Baldo.pdf
+                          (gitignored — local only; git history is the real backup)
+  02_2025_FEUP_MSc_Afonso_Baldo.pdf   (thesis; gitignored)
 ```
 
 ## The four methods
@@ -55,6 +65,10 @@ correction_rate=0.1`; model = Adam, correction = RMSprop, epoch-wise update.
 | DeepAnT (TSB-AD CNN) | 0.350 | 0.770 | 0.33 | ✅ reproduced |
 | RW | 0.321 | 0.703 | 0.29 (T6.1) / 0.34 (best-HP) | ✅ reproduced (per-dataset corr 0.99) |
 | RW-1 | in progress | — | 0.28 / 0.35 | 🔧 fixed, best-HP sweep running |
+
+Per-dataset / per-family numbers and the exact run scripts live in each
+method's `reproduction/` folder (`deepant/reproduction/`, `rw/reproduction/`,
+`autocegar/reproduction/`).
 
 Paper headline (Table 6.1, avg over its 17 datasets): RW 0.29 / RW-1 0.28.
 The 0.34 / 0.35 in Table 6.5 are **best-HP-per-dataset**.
