@@ -125,10 +125,19 @@ class ResidualStats:
     @property
     def q95(self) -> float:
         """Global 95th-percentile residual from the rolling buffer."""
+        return self.quantile(0.95)
+
+    def quantile(self, q: float) -> float:
+        """Global q-quantile residual from the rolling buffer.
+
+        Used to map a controller-chosen quantile (``valley_quantile_controller``)
+        back to a residual threshold ``tau`` for ``C_t``. Falls back to 1.0 when
+        the buffer is empty.
+        """
         if not self._global_buffer:
             return 1.0
         t = torch.tensor(list(self._global_buffer), dtype=torch.float32)
-        return float(torch.quantile(t, 0.95).item())
+        return float(torch.quantile(t, float(min(max(q, 0.0), 1.0))).item())
 
     def channel_q95(self) -> list:
         """Per-channel 95th-percentile residuals from the rolling buffers."""
