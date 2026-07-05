@@ -139,6 +139,22 @@ class ResidualStats:
         t = torch.tensor(list(self._global_buffer), dtype=torch.float32)
         return float(torch.quantile(t, float(min(max(q, 0.0), 1.0))).item())
 
+    def median(self) -> float:
+        """Global median residual from the rolling buffer (robust location)."""
+        return self.quantile(0.5)
+
+    def mad(self) -> float:
+        """Median absolute deviation * 1.4826 (robust scale ~ std for normal data).
+
+        Used by Proposal 1's robust z-score wrongness. Falls back to 1.0 on an
+        empty buffer.
+        """
+        if not self._global_buffer:
+            return 1.0
+        t = torch.tensor(list(self._global_buffer), dtype=torch.float32)
+        med = t.median()
+        return float((t - med).abs().median().item()) * 1.4826
+
     def channel_q95(self) -> list:
         """Per-channel 95th-percentile residuals from the rolling buffers."""
         out = []

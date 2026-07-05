@@ -119,6 +119,27 @@ class CNN_RW_CEGAR(CNN_RW):
             return torch.zeros_like(ts).detach().requires_grad_(True)
         return (-ts.clone()).detach().requires_grad_(True)
 
+    def _compute_signals(self, window_resid, res_stats):
+        """Wrongness E_t and confidence C_t (both ``[B]`` in ``[0, 1]``).
+
+        THIS is the only per-proposal knob. The base class keeps the placeholder
+        residual signals (q95-ratio wrongness + scalar historical-EMA confidence);
+        each proposal subclass overrides ONLY this method to plug in its own
+        wrong/confidence definitions, reusing warm-up / gate / ScaleGrad /
+        controllers unchanged.
+
+        Args:
+            window_resid: per-window residual magnitude ``[B]``.
+            res_stats:    the live :class:`ResidualStats` (q95, ema, quantile, ...).
+
+        Returns:
+            ``(E_t, confidence)`` each a tensor of shape ``[B]``.
+        """
+        E_t = compute_wrongness_E_t(window_resid, res_stats.q95)      # [B]
+        C_t = compute_confidence_C_t(res_stats.ema, self.tau, self.k)  # scalar
+        confidence = torch.full_like(E_t, float(C_t))                 # broadcast -> [B]
+        return E_t, confidence
+
     def fit(self, data, train_idx=None):
         print(f"Training CNN_RW_CEGAR (RW-1 + CEGAR gate) | warmup={self.warmup_epochs} "
               f"| lam_mode={self.lam_mode} | tau_mode={self.tau_mode} "
@@ -181,9 +202,7 @@ class CNN_RW_CEGAR(CNN_RW):
                 B = output.shape[0]
                 residual = (target_full - output).detach().view(B, self.feats, self.pred_len)
                 window_resid = res_stats.update(residual)                 # [B]
-                E_t = compute_wrongness_E_t(window_resid, res_stats.q95)   # [B] in [0,1]
-                C_t = compute_confidence_C_t(res_stats.ema, self.tau, self.k)  # scalar in [0,1]
-                confidence = torch.full_like(E_t, float(C_t))             # [B] (scalar broadcast)
+                E_t, confidence = self._compute_signals(window_resid, res_stats)  # [B], [B]
 
                 # canonical gate() -> per-window scale + control stats
                 scale, stats = compute_gate(
