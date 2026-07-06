@@ -10,11 +10,21 @@ reproduced RW-1 (Algorithm 2) substrate; it overrides only the wrongness /
 confidence signals:
 
 - **Wrongness** `E_t = sigmoid(k·(robust_z − τ))`, `robust_z = (r − median)/MAD`
-- **Confidence** `C_t = 1` (basic) or `sigmoid(k·(r − Q_q(r))/MAD)` (selective)
+- **Confidence** `C_t` — this is the only thing the **variant** switches:
+  - **`basic`**: `C_t = 1` — always confident. The gate is driven purely by
+    wrongness (residual). This is the docx's basic version.
+  - **`selective`**: `C_t = sigmoid(k·(r − Q_q(r))/MAD)` — confident only when the
+    residual is in the distribution's upper tail (`Q_q`, q=0.95 by default), so a
+    window must be *both* high-residual *and* in the tail to be gated.
 - **Gate** `g = E_t·C_t`, **scale** `s = (1 + λg)/mean(1 + λg)` (batch-normalized)
 - `s` scales the per-window forecasting-loss **gradient** via `ScaleGrad`
   (identity forward → reported loss stays true RMSE).
 - Anomaly score = `mean|correction|` (same as RW-1, for a fair delta).
+
+**τ and λ are independent of the variant.** `τ` (robust-z threshold) and `λ` (gate
+strength) apply to both `basic` and `selective`. So stages 1–3 all use `basic`
+(`C_t = 1`) and only vary τ or λ; stage 4 switches to `selective` while keeping
+τ=2, λ=1 fixed — i.e. it isolates the effect of the confidence term alone.
 
 ## Fixed configuration (kept at RW-1 reproduction values)
 
@@ -56,16 +66,26 @@ per stage; every other hyperparameter is held at the stage-1 values (basic, τ=2
 
 ### Stage 1 — P1 (basic, default HP) vs RW-1 baseline
 
-Primary metric AUC-PR. **Δ = P1 − RW-1.**
+Primary metric AUC-PR. **Δ = P1 − RW-1.** DeepAnT added as a reference (see note).
 
-| dataset | P1 AUC-PR | RW-1 AUC-PR | **Δ AUC-PR** | P1 AUC-ROC |
-|---|:--:|:--:|:--:|:--:|
-| opportunity | 0.0209 | 0.0284 | **−0.0075** | 0.367 |
-| gecco | 0.4565 | 0.6671 | **−0.2105** | 0.922 |
-| creditcard | 0.0032 | 0.1227 | **−0.1195** | 0.595 |
+| dataset | DeepAnT AUC-PR* | RW-1 AUC-PR | P1 AUC-PR | **Δ (P1−RW-1)** | P1 AUC-ROC |
+|---|:--:|:--:|:--:|:--:|:--:|
+| opportunity | 0.1995 | 0.0284 | 0.0209 | **−0.0075** | 0.367 |
+| gecco | 0.4545 | 0.6671 | 0.4565 | **−0.2105** | 0.922 |
+| creditcard | 0.1472 | 0.1227 | 0.0032 | **−0.1195** | 0.595 |
 
-**P1 is worse than RW-1 on all three datasets**, and heavily so on gecco (the set
-where RW-1 was strongest) and creditcard.
+> \* **DeepAnT** = standalone reproduction (`deepant/reproduction/summary_per_dataset.csv`):
+> 200 epochs, TSB-AD eval pipeline, **residual-based** score. RW-1 and P1 here are
+> fresh 100-epoch `run_proposal.py` runs with the **`|correction|`** score. So the
+> DeepAnT column is an approximate reference (different epochs / eval / score
+> source), not a strictly controlled comparison.
+
+**P1 is worse than RW-1 on all three datasets**, and heavily so on gecco (where
+RW-1 was strongest) and creditcard. With DeepAnT in view the picture matches
+Baldo's finding and the week-8 dataset rationale: **DeepAnT is strongest on
+opportunity (0.20 vs ~0.02) and creditcard (0.15 vs 0.12); RW-1 is strongest on
+gecco (0.67).** P1 is never the best — it collapses RW-1's gecco advantage down to
+DeepAnT's level and craters on creditcard.
 
 ### Stage 2 — τ sweep (opportunity, basic, λ=1)
 
