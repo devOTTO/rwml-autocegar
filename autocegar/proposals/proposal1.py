@@ -58,29 +58,43 @@ class CNN_RW_CEGAR_P1(CNN_RW_CEGAR):
     PROPOSAL = 1
     NAME = "P1-ResidualGated"
 
-    def __init__(self, *args, conf_mode="basic", conf_q=0.95, **kwargs):
+    def __init__(self, *args, conf_mode="basic", conf_q=0.95, k_conf=None, **kwargs):
         # Proposal-1-appropriate defaults (caller/​runner can still override).
-        kwargs.setdefault("tau", 2.0)             # robust-z units, not residual-EMA
-        kwargs.setdefault("k", 1.0)               # gentle sigmoid in z-space
+        kwargs.setdefault("tau", 2.0)             # robust-z units (tau_e), not residual-EMA
+        kwargs.setdefault("k", 1.0)               # gentle sigmoid in z-space (k_e)
         kwargs.setdefault("warmup_epochs", 10)
         kwargs.setdefault("correction_init", "zero")
+        kwargs.setdefault("scale_normalize", True)  # docx: s_t = (1+lam*g)/mean(1+lam*g)
         super().__init__(*args, **kwargs)
         if conf_mode not in ("basic", "quantile"):
             raise ValueError(f"conf_mode must be 'basic' or 'quantile', got {conf_mode}")
         self.conf_mode = conf_mode
         self.conf_q = float(conf_q)
+        # k_conf (k_c) defaults to k (k_e) when not given -> single shared sharpness.
+        self.k_conf = float(k_conf) if k_conf is not None else None
 
     def _compute_signals(self, window_resid, res_stats):
-        """Robust-z wrongness x (basic|tail-quantile) confidence. Both ``[B]``."""
+        """Robust-z wrongness x (basic|tail-quantile) confidence. Both ``[B]``.
+
+        Exact docx Proposal-1 formulas:
+            e_t      = (r - median(r)) / MAD(r)              # RobustZ
+            g_err,t  = sigmoid(k_e * (e_t - tau_e))
+            g_conf,t = 1                        (basic)
+                     = sigmoid(k_c * (e_t - Q_qc(E)))        (selective)
+        The 'selective' branch below uses (r - quantile_q(r))/MAD, which is
+        algebraically identical to (e_t - Q_qc(E)) because the median cancels:
+            e_t - Q_qc(E) = (r-med)/MAD - (Q_qc(r)-med)/MAD = (r - Q_qc(r))/MAD.
+        """
         med = res_stats.median()
         mad = max(res_stats.mad(), 1e-8)
+        kc = self.k_conf if self.k_conf is not None else self.k
 
         robust_z = (window_resid - med) / mad
-        E_t = torch.sigmoid(self.k * (robust_z - self.tau))          # [B] in [0,1]
+        E_t = torch.sigmoid(self.k * (robust_z - self.tau))          # g_err,t  [B] in [0,1]
 
         if self.conf_mode == "basic":
-            C_t = torch.ones_like(E_t)                               # always confident
+            C_t = torch.ones_like(E_t)                               # g_conf,t = 1
         else:  # 'quantile' — is this residual in the distribution's tail?
-            q_thr = res_stats.quantile(self.conf_q)
-            C_t = torch.sigmoid(self.k * (window_resid - q_thr) / mad)
+            q_thr = res_stats.quantile(self.conf_q)                  # Q_qc in residual units
+            C_t = torch.sigmoid(kc * (window_resid - q_thr) / mad)   # == sigmoid(kc*(e_t - Q_qc(E)))
         return E_t, C_t
