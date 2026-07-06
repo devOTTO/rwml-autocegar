@@ -34,12 +34,23 @@ confidence signals:
 
 ## What was tested
 
-| stage | tag | vary | datasets | baseline |
-|---|---|---|---|---|
-| 1 | `stage1` | — (basic, τ=2, λ=1) | all 3 | RW-1 |
-| 2 | `stage2-tau` | τ ∈ {1.5, 2.5, 3.0} | opportunity | — |
-| 3 | `stage3-lam` | λ ∈ {0.5, 2.0} | opportunity | — |
-| 4 | `stage4-sel` | variant=selective | all 3 | — |
+All stages share `epochs=100`, `warmup=10`, `window=50`, `batch=256`,
+`l1_weight=0.001` (see Fixed configuration above). Only the `vary` column changes
+per stage; every other hyperparameter is held at the stage-1 values (basic, τ=2,
+λ=1).
+
+| stage | tag | vary | datasets | epochs | warmup | baseline |
+|---|---|---|---|:--:|:--:|---|
+| 1 | `stage1` | — (basic, τ=2, λ=1) | all 3 | 100 | 10 | RW-1 |
+| 2 | `stage2-tau` | τ ∈ {1.5, 2.5, 3.0} | opportunity | 100 | 10 | — |
+| 3 | `stage3-lam` | λ ∈ {0.5, 2.0} | opportunity | 100 | 10 | — |
+| 4 | `stage4-sel` | variant=selective | all 3 | 100 | 10 | — |
+
+> **Why sweeps (stage 2–3) used opportunity only:** fail-fast economy (fewest,
+> fastest runs). In hindsight gecco would have been a better sensitivity probe —
+> opportunity was the noisiest / weakest dataset for P1 (AUC-ROC ≈ 0.34, near
+> random), so its HP sweep carries little signal. The overall verdict is
+> unaffected (default HP loses on all 3; opportunity sweeps did not recover it).
 
 ## Results
 
@@ -88,6 +99,32 @@ Stronger gating (λ↑) helps slightly on opportunity but still stays below RW-1
 
 Selective ≈ basic (marginally worse on gecco, marginally better on creditcard).
 No meaningful improvement.
+
+## Timing (slurm array 41945419, 1× v100-32, %6 concurrency)
+
+- **Total wall-clock (11 tasks, 6 in parallel): ≈ 24 min.**
+- **Total compute (sum of tasks): ≈ 79 min ≈ 1.3 GPU-h.**
+- Per task (`Elapsed` from `sacct`). Stage-1 tasks run **two** models (P1 + RW-1
+  baseline); all others run one. Each task carries ~3 min fixed overhead
+  (venv + data load + wandb init).
+
+| task | stage | what it ran | elapsed |
+|:--:|:--:|---|:--:|
+| 1 | 1 | opportunity: P1-basic **+ RW-1 baseline** | 5:03 |
+| 2 | 1 | gecco: P1-basic **+ RW-1 baseline** | 9:19 |
+| 3 | 1 | creditcard: P1-basic **+ RW-1 baseline** | 18:19 |
+| 4 | 2 | opportunity τ=1.5 | 4:13 |
+| 5 | 2 | opportunity τ=2.5 | 4:13 |
+| 6 | 2 | opportunity τ=3.0 | 4:13 |
+| 7 | 3 | opportunity λ=0.5 | 4:12 |
+| 8 | 3 | opportunity λ=2.0 | 4:12 |
+| 9 | 4 | opportunity selective | 4:12 |
+| 10 | 4 | gecco selective | 6:11 |
+| 11 | 4 | creditcard selective | 14:50 |
+
+Rough single-model cost (net of ~3 min overhead): opportunity ~1 min, gecco
+~3 min, creditcard ~8–12 min per 100-epoch run — consistent with sequence length
+being the driver (see `dataset_sizes.md`).
 
 ## Interpretation
 
