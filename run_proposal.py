@@ -106,7 +106,11 @@ def fit_with_wandb(model, data, run_name, group, tags, config, enabled):
         mode=os.environ.get("WANDB_MODE", "online"),
         name=run_name, group=group, tags=tags, config=config, reinit=True,
     )
-    model.on_epoch_end = lambda m: wandb.log(m, step=int(m["epoch"]))
+    # Log per-epoch metrics under a "train/" namespace so they group together
+    # and stay separate from config columns (lam/tau/...) and eval columns
+    # (auc_pr/...). Consistent across all proposals -> reusable column layout.
+    model.on_epoch_end = lambda m: wandb.log(
+        {f"train/{k}": v for k, v in m.items() if k != "epoch"}, step=int(m["epoch"]))
     scores = model.fit(data)
     return run, scores
 
