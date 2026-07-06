@@ -151,6 +151,10 @@ class CNN_RW():
         self.correction_optimizer = None
         self.save_path = None
 
+        # optional per-epoch callback fn(metrics: dict) -> None (e.g. wandb).
+        # None => no-op; base behaviour unchanged.
+        self.on_epoch_end = None
+
     def _normalize(self, ts):
         mean, std = np.mean(ts, axis=0), np.std(ts, axis=0)
         std = np.where(std == 0, 1e-8, std)
@@ -232,6 +236,11 @@ class CNN_RW():
                 self.correction_optimizer.step()
 
             avg_loss /= max(n_batches, 1)
+            if self.on_epoch_end is not None:
+                self.on_epoch_end({
+                    "epoch": epoch, "phase": "main",
+                    "loss": float(avg_loss), "l1": float(l1_loss.item()),
+                })
             print(f"Epoch [{epoch}/{self.epochs}] | Loss: {avg_loss:.4f} | L1: {l1_loss.item():.4f}")
 
         scores = np.abs(correction.detach().cpu().numpy()[0, :, :]).mean(axis=0)

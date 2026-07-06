@@ -114,6 +114,11 @@ class CNN_RW_CEGAR(CNN_RW):
         self._gate_mean_ema = None
         self._gate_p99_ema = None
 
+        # optional per-epoch callback: fn(metrics: dict) -> None. Set by the
+        # caller (e.g. run_proposal.py) to stream metrics to wandb during
+        # training. None => no-op, so the base behaviour is unchanged.
+        self.on_epoch_end = None
+
     def _init_correction(self, ts):
         if self.correction_init == "zero":
             return torch.zeros_like(ts).detach().requires_grad_(True)
@@ -257,8 +262,20 @@ class CNN_RW_CEGAR(CNN_RW):
                 l1_loss = torch.tensor(0.0)
 
             avg_loss /= max(n_batches, 1)
+            phase = "warmup" if warm else "main"
+            metrics = {
+                "epoch": epoch,
+                "phase": phase,
+                "loss": float(avg_loss),
+                "l1": float(l1_loss),
+                "gate_mean": float(gate_sum / max(n_batches, 1)),
+                "lam": float(self.lam),
+                "tau": float(self.tau),
+                "q95": float(res_stats.q95),
+            }
+            if self.on_epoch_end is not None:
+                self.on_epoch_end(metrics)  # e.g. stream to wandb every epoch
             if epoch == 1 or epoch % 20 == 0 or epoch == self.epochs or epoch == self.warmup_epochs:
-                phase = "warmup" if warm else "main"
                 print(f"Epoch [{epoch}/{self.epochs}] ({phase}) | Loss: {avg_loss:.4f} "
                       f"| L1: {float(l1_loss):.4f} | gate: {gate_sum/max(n_batches,1):.4f} "
                       f"| lam: {self.lam:.3f} | tau: {self.tau:.3f} | q95: {res_stats.q95:.4f}")
