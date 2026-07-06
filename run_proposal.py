@@ -130,8 +130,10 @@ def run_one(args, dataset_key):
         base = CNN_RW(**common)
         brun, bscores = fit_with_wandb(
             base, data, run_name=f"RW1-baseline-{dataset_key}-ep{args.epochs}",
-            group=f"proposal{args.proposal}", tags=["baseline", "RW-1", dataset_key],
-            config={**shared_cfg, "model": "RW-1", "score": "mean|correction|"}, enabled=wb)
+            group=f"proposal{args.proposal}",
+            tags=["baseline", "RW-1", dataset_key, f"ep{args.epochs}"] + list(args.tag),
+            config={**shared_cfg, "model": "RW-1", "score": "mean|correction|",
+                    "tags": list(args.tag)}, enabled=wb)
         base_pr, base_roc = evaluate(bscores, label)
         print(f">> RW-1 baseline {dataset_key}: AUC-PR={base_pr:.4f} AUC-ROC={base_roc:.4f}", flush=True)
         if brun is not None:
@@ -151,9 +153,12 @@ def run_one(args, dataset_key):
                 "warmup_epochs": args.warmup, "scale_normalize": model.scale_normalize,
                 "correction_init": model.correction_init, "score": "mean|correction|"}
     prun, scores = fit_with_wandb(
-        model, data, run_name=f"P{args.proposal}-{args.variant}-{dataset_key}-ep{args.epochs}",
-        group=f"proposal{args.proposal}", tags=[f"P{args.proposal}", args.variant, dataset_key],
-        config=prop_cfg, enabled=wb)
+        model, data,
+        run_name=f"P{args.proposal}-{args.variant}-{dataset_key}-ep{args.epochs}-t{args.tau}-l{args.lam}",
+        group=f"proposal{args.proposal}",
+        tags=[f"P{args.proposal}", args.variant, dataset_key,
+              f"tau{args.tau}", f"lam{args.lam}", f"ep{args.epochs}"] + list(args.tag),
+        config={**prop_cfg, "tags": list(args.tag)}, enabled=wb)
     pr, roc = evaluate(scores, label)
     print(f"\n>> P{args.proposal}-{args.variant} {dataset_key}: AUC-PR={pr:.4f} AUC-ROC={roc:.4f}", flush=True)
 
@@ -216,6 +221,8 @@ def main():
     p.add_argument("--baseline", action="store_true", help="also run plain RW-1 for the delta")
     p.add_argument("--no-wandb", action="store_true",
                    help="disable wandb logging (default: on if WANDB_ENABLED!=0)")
+    p.add_argument("--tag", action="append", default=[],
+                   help="extra wandb tag (repeatable), e.g. --tag stage1")
     args = p.parse_args()
 
     entry = get_proposal(args.proposal)

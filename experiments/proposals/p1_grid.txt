@@ -1,0 +1,11 @@
+--proposal 1 --dataset opportunity --variant basic --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag stage1
+--proposal 1 --dataset gecco --variant basic --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag stage1
+--proposal 1 --dataset creditcard --variant basic --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag stage1
+--proposal 1 --dataset opportunity --variant basic --tau 1.5 --lam 1.0 --epochs 100 --warmup 10 --tag stage2-tau
+--proposal 1 --dataset opportunity --variant basic --tau 2.5 --lam 1.0 --epochs 100 --warmup 10 --tag stage2-tau
+--proposal 1 --dataset opportunity --variant basic --tau 3.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage2-tau
+--proposal 1 --dataset opportunity --variant basic --tau 2.0 --lam 0.5 --epochs 100 --warmup 10 --tag stage3-lam
+--proposal 1 --dataset opportunity --variant basic --tau 2.0 --lam 2.0 --epochs 100 --warmup 10 --tag stage3-lam
+--proposal 1 --dataset opportunity --variant selective --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage4-sel
+--proposal 1 --dataset gecco --variant selective --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage4-sel
+--proposal 1 --dataset creditcard --variant selective --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage4-sel
