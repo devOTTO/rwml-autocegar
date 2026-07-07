@@ -164,6 +164,12 @@ class CNN_RW_CEGAR(CNN_RW):
         res_stats = ResidualStats(self.feats, ema_beta=self.ema_beta,
                                   buffer_size=self.buffer_size)
 
+        # Interpretability: per-timestep gate activation, recorded in the FINAL
+        # epoch, so we can later check whether the gate fired AT anomalies (vs the
+        # ground-truth labels) and whether correction concentrated there.
+        gate_accum = np.zeros(total_length, dtype=np.float64)
+        gate_count = np.zeros(total_length, dtype=np.float64)
+
         for epoch in range(1, self.epochs + 1):
             warm = epoch <= self.warmup_epochs
             self.model.train(mode=True)
@@ -214,7 +220,12 @@ class CNN_RW_CEGAR(CNN_RW):
                     confidence=confidence, wrongness=E_t, lam=self.lam,
                     scale_normalize=self.scale_normalize, detach_gates=True,
                     minimal_stats=True)
-                gate_sum += float((E_t * confidence).clamp(0.0, 1.0).mean().item())
+                g_win = (E_t * confidence).clamp(0.0, 1.0).detach()  # [B] per-window gate
+                gate_sum += float(g_win.mean().item())
+                if epoch == self.epochs:  # record per-timestep gate in the final epoch
+                    tgt = np.asarray(yb_idx).reshape(-1)
+                    np.add.at(gate_accum, tgt, np.repeat(g_win.cpu().numpy(), self.pred_len))
+                    np.add.at(gate_count, tgt, 1.0)
 
                 # ── gate applied to the per-window RMSE GRADIENT (ScaleGrad),
                 #    not the loss value: reported loss stays the true RMSE. ──
@@ -281,4 +292,10 @@ class CNN_RW_CEGAR(CNN_RW):
                       f"| lam: {self.lam:.3f} | tau: {self.tau:.3f} | q95: {res_stats.q95:.4f}")
 
         scores = np.abs(correction.detach().cpu().numpy()[0, :, :]).mean(axis=0)
+
+        # interpretability outputs (aligned per timestep):
+        #   correction_per_t = how much each point was changed (== score)
+        #   gate_per_t       = mean gate activation on windows targeting that point
+        self.correction_per_t = scores
+        self.gate_per_t = gate_accum / np.maximum(gate_count, 1.0)
         return scores

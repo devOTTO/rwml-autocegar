@@ -77,6 +77,37 @@ def evaluate(scores, label):
     return average_precision_score(y, s), roc_auc_score(y, s)
 
 
+def gate_interpretability(scores, gate_per_t, label, thr=0.5):
+    """Was the gate triggered AT anomalies, and did correction concentrate there?
+
+    Compares the per-timestep gate activation and correction magnitude on
+    anomaly vs normal timesteps (ratio > 1 = fires more on anomalies), plus how
+    well the gate alone localizes anomalies, and trigger counts.
+    """
+    n = min(len(scores), len(gate_per_t), len(label))
+    s = np.asarray(scores[:n], float)
+    g = np.asarray(gate_per_t[:n], float)
+    y = np.asarray(label[:n], int).astype(bool)
+    out = {}
+    if y.any() and (~y).any():
+        out["gate/anom_mean"] = float(g[y].mean())
+        out["gate/norm_mean"] = float(g[~y].mean())
+        out["gate/anom_over_norm"] = float(g[y].mean() / max(g[~y].mean(), 1e-9))
+        out["corr/anom_mean"] = float(s[y].mean())
+        out["corr/norm_mean"] = float(s[~y].mean())
+        out["corr/anom_over_norm"] = float(s[y].mean() / max(s[~y].mean(), 1e-9))
+        out["gate/auc_roc_vs_label"] = float(roc_auc_score(y, g))
+        out["gate/auc_pr_vs_label"] = float(average_precision_score(y, g))
+    trig = g > thr
+    out["gate/trigger_frac"] = float(trig.mean())          # fraction of timeline gated
+    out["gate/trigger_count"] = int(trig.sum())            # how many timesteps triggered
+    if trig.any():
+        out["gate/trigger_precision"] = float(y[trig].mean())  # of triggered, frac at anomalies
+    if y.any():
+        out["gate/trigger_recall"] = float(trig[y].mean())     # of anomalies, frac triggered
+    return out
+
+
 def wandb_enabled(args):
     """wandb on unless --no-wandb, WANDB_ENABLED=0, or WANDB_MODE=disabled."""
     if args.no_wandb:
@@ -166,8 +197,19 @@ def run_one(args, dataset_key):
     pr, roc = evaluate(scores, label)
     print(f"\n>> P{args.proposal}-{args.variant} {dataset_key}: AUC-PR={pr:.4f} AUC-ROC={roc:.4f}", flush=True)
 
+    # ── interpretability: did the gate fire at anomalies / correction concentrate there? ──
+    interp = {}
+    if getattr(model, "gate_per_t", None) is not None:
+        interp = gate_interpretability(scores, model.gate_per_t, label)
+        print(f">> INTERPRET | gate@anom/norm={interp.get('gate/anom_over_norm', float('nan')):.2f} "
+              f"| corr@anom/norm={interp.get('corr/anom_over_norm', float('nan')):.2f} "
+              f"| gate→label AUC-ROC={interp.get('gate/auc_roc_vs_label', float('nan')):.3f} "
+              f"| trigger_frac={interp.get('gate/trigger_frac', float('nan')):.3f} "
+              f"(prec={interp.get('gate/trigger_precision', float('nan')):.3f}, "
+              f"recall={interp.get('gate/trigger_recall', float('nan')):.3f})", flush=True)
+
     if prun is not None:
-        summary = {"auc_pr": pr, "auc_roc": roc}
+        summary = {"auc_pr": pr, "auc_roc": roc, **interp}
         if base_pr is not None:
             summary.update({"rw1_auc_pr": base_pr, "rw1_auc_roc": base_roc,
                             "delta_pr": pr - base_pr, "delta_roc": roc - base_roc})
