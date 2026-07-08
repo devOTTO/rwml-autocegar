@@ -94,11 +94,49 @@ config schema — old runs have `cegar.*` / `method`, these do not):
 
 - Filter `Group = proposalN`  → all runs from this proposal (incl. baselines).
 - Filter `Tags contains PN`   → the proposal runs + summary (not baselines).
+- Filter `Tags contains interp` → the batch that recorded interpretability.
 - Filter `Tags contains stage2-tau` (etc.) → one sweep stage.
 - **Group by** the `dataset` config field → collapse all runs per dataset.
 - Column layout: hide the empty `cegar.*` columns; per-epoch metrics live under
   the `train/` group; keep `variant`, `tau`, `lam`, `auc_pr`, `auc_roc`,
   `delta_pr` visible. Save it as a workspace view to reuse for P2–P5.
+
+### Which values to look at
+
+Run types: `P{N}-{variant}-{dataset}-...` (proposal), `RW1-baseline-...` (baseline),
+`P{N}-summary` (aggregate), `P{N}-...-example` (figure).
+
+**1. Performance — the verdict (run summary):**
+- `auc_pr`, `auc_roc` — proposal performance.
+- `rw1_auc_pr`, `rw1_auc_roc` — RW-1 baseline (only on stage-1 runs).
+- **`delta_pr`, `delta_roc`** — proposal − RW-1. Positive = improvement. **Main verdict.**
+
+**2. Interpretability — why (run summary, only on the `interp` batch):**
+- **`gate/auc_roc_vs_label`** — does the gate localize anomalies? (>0.5 = targets them)
+- **`gate/anom_over_norm`** — how many × more the gate fires on anomaly vs normal steps.
+- **`corr/anom_over_norm`** — how many × more correction lands on anomalies
+  (**high = it is erasing the anomalies → the P1 risk**).
+- `corr/anom_mean`, `corr/norm_mean` — correction magnitude, anomaly vs normal.
+- `gate/trigger_frac` — fraction of the timeline gated; `gate/trigger_count` — how many steps.
+- `gate/trigger_precision` — of gated steps, fraction that are anomalies.
+- `gate/trigger_recall` — of anomaly steps, fraction gated.
+
+**3. Training curves — per epoch (charts, `train/` group):**
+`train/loss`, `train/l1`, `train/gate_mean`, `train/lam`, `train/tau`, `train/q95`,
+`train/phase` (warmup ↔ main).
+
+**4. Config (⚙):** `proposal`, `variant`, `dataset`, `lam`, `tau`, `k`, `conf_mode`,
+`conf_q`, `warmup_epochs`, `epochs`, `window_size`, `batch_size`, `l1_weight`,
+`scale_normalize`, `correction_init`, `model`, `score`.
+
+**5. Aggregate / figure runs:** `P{N}-summary` has the `all_runs` table +
+`delta_pr_by_dataset` chart + `n_datasets_improved`; `P{N}-...-example` has the
+`correction_example` image (original vs corrected signal).
+
+**Quick read:** `delta_pr` (did it win?) + `gate/auc_roc_vs_label` (did the gate
+target anomalies?) + `corr/anom_over_norm` (did it then erase them?) explains both
+whether and why. Note: `gate/*` and `corr/*` exist only on the `interp` batch;
+baseline runs have no `gate/*` or `delta_*`.
 
 ## 4. Write up the result
 
