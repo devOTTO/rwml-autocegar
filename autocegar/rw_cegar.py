@@ -298,4 +298,6 @@ class CNN_RW_CEGAR(CNN_RW):
         #   gate_per_t       = mean gate activation on windows targeting that point
         self.correction_per_t = scores
         self.gate_per_t = gate_accum / np.maximum(gate_count, 1.0)
+        # full correction tensor [feats, T] for original-vs-corrected example plots
+        self.correction_full = correction.detach().cpu().numpy()[0]
         return scores

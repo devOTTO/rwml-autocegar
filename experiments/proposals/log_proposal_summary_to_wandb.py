@@ -32,7 +32,11 @@ def main():
 
     csv = os.path.join(HERE, f"results_p{args.proposal}.csv")
     df = pd.read_csv(csv)
-    print(f"loaded {len(df)} runs from {csv}")
+    # keep only the latest row per config (results_pN.csv accumulates across
+    # re-runs; keep='last' -> the most recent batch for each unique setting).
+    keys = [c for c in ["dataset", "variant", "tau", "lam", "epochs"] if c in df.columns]
+    df = df.drop_duplicates(subset=keys, keep="last").reset_index(drop=True)
+    print(f"loaded {len(df)} runs (deduped by {keys}) from {csv}")
 
     run = wandb.init(
         entity=os.environ.get("WANDB_ENTITY") or None,
