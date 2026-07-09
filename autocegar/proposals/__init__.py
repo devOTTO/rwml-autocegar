@@ -18,6 +18,7 @@ To add a proposal N:
 doc but not yet implemented.
 """
 from .proposal1 import CNN_RW_CEGAR_P1
+from .proposal2 import CNN_RW_CEGAR_P2
 
 PROPOSALS = {
     1: {
@@ -33,10 +34,14 @@ PROPOSALS = {
     },
     2: {
         "name": "Uncertainty-Aware Residual CEGAR",
-        "cls": None,  # TODO: MC-dropout / ensemble confidence (Proposal 2)
-        "summary": "Confidence = inverse predictive uncertainty (MC-dropout/ensemble).",
-        "variants": {},
-        "default_variant": None,
+        "cls": CNN_RW_CEGAR_P2,
+        "summary": "Confidence = inverse predictive uncertainty via MC-dropout; "
+                   "robust-z residual wrongness. Cleanest CEGAR analogue.",
+        "variants": {
+            "mc5":  {"mc_samples": 5},    # 5 MC-dropout passes (default)
+            "mc10": {"mc_samples": 10},   # more passes = steadier uncertainty, slower
+        },
+        "default_variant": "mc5",
     },
     3: {
         "name": "RW-Correction-Consistency CEGAR",
@@ -89,4 +94,4 @@ def build_model(n: int, variant=None, **kwargs):
     return model
 
 
-__all__ = ["PROPOSALS", "get_proposal", "build_model", "CNN_RW_CEGAR_P1"]
+__all__ = ["PROPOSALS", "get_proposal", "build_model", "CNN_RW_CEGAR_P1", "CNN_RW_CEGAR_P2"]

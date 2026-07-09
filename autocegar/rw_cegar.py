@@ -124,7 +124,7 @@ class CNN_RW_CEGAR(CNN_RW):
             return torch.zeros_like(ts).detach().requires_grad_(True)
         return (-ts.clone()).detach().requires_grad_(True)
 
-    def _compute_signals(self, window_resid, res_stats):
+    def _compute_signals(self, window_resid, res_stats, model_input=None):
         """Wrongness E_t and confidence C_t (both ``[B]`` in ``[0, 1]``).
 
         THIS is the only per-proposal knob. The base class keeps the placeholder
@@ -136,6 +136,10 @@ class CNN_RW_CEGAR(CNN_RW):
         Args:
             window_resid: per-window residual magnitude ``[B]``.
             res_stats:    the live :class:`ResidualStats` (q95, ema, quantile, ...).
+            model_input:  the exact tensor fed to the model this batch
+                          (``x + x_corr``, shape ``[B, feats, W]``). Proposals that
+                          need extra forward passes (e.g. P2 MC-dropout uncertainty)
+                          use it; P1 / the base ignore it.
 
         Returns:
             ``(E_t, confidence)`` each a tensor of shape ``[B]``.
@@ -213,7 +217,7 @@ class CNN_RW_CEGAR(CNN_RW):
                 B = output.shape[0]
                 residual = (target_full - output).detach().view(B, self.feats, self.pred_len)
                 window_resid = res_stats.update(residual)                 # [B]
-                E_t, confidence = self._compute_signals(window_resid, res_stats)  # [B], [B]
+                E_t, confidence = self._compute_signals(window_resid, res_stats, x + x_corr)  # [B], [B]
 
                 # canonical gate() -> per-window scale + control stats
                 scale, stats = compute_gate(
