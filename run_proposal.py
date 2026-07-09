@@ -278,11 +278,15 @@ def run_one(args, dataset_key):
         warmup_epochs=args.warmup, **common, **extra)
     entry = get_proposal(args.proposal)
     prop_cfg = {**shared_cfg, "model": entry["name"], "proposal": args.proposal,
-                "variant": args.variant, "lam": args.lam, "tau": args.tau, "k": args.k,
+                # log the model's ACTUAL lam (P3 forces 0), not just the CLI default
+                "variant": args.variant, "lam": getattr(model, "lam", args.lam),
+                "tau": args.tau, "k": args.k,
                 "conf_mode": getattr(model, "conf_mode", None),
                 "conf_q": getattr(model, "conf_q", None),
                 "mc_samples": getattr(model, "mc_samples", None),
                 "tau_u": getattr(model, "tau_u", None),
+                "gamma": getattr(model, "gamma", None),
+                "corr_q": getattr(model, "corr_q", None),
                 "warmup_epochs": args.warmup, "scale_normalize": model.scale_normalize,
                 "correction_init": model.correction_init, "score": "mean|correction|"}
     extra_suffix = ("-" + "_".join(f"{k}{v}" for k, v in extra.items())) if extra else ""

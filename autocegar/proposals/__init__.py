@@ -19,6 +19,7 @@ doc but not yet implemented.
 """
 from .proposal1 import CNN_RW_CEGAR_P1
 from .proposal2 import CNN_RW_CEGAR_P2
+from .proposal3 import CNN_RW_CEGAR_P3
 
 PROPOSALS = {
     1: {
@@ -45,10 +46,14 @@ PROPOSALS = {
     },
     3: {
         "name": "RW-Correction-Consistency CEGAR",
-        "cls": None,  # TODO: correction magnitude + persistence gate (Proposal 3)
-        "summary": "Gate from RW correction magnitude x direction-stability over epochs.",
-        "variants": {},
-        "default_variant": None,
+        "cls": CNN_RW_CEGAR_P3,
+        "summary": "Gate from correction magnitude x persistence over epochs; write-back "
+                   "SUPPRESSED on confident corrections (preserve, not erase). Stage 1.",
+        "variants": {
+            "preserve":      {"gamma": 0.9},   # strong preserve (freeze confident corrections)
+            "preserve_soft": {"gamma": 0.5},   # gentler suppression
+        },
+        "default_variant": "preserve",
     },
     4: {
         "name": "Dual-Gate Residual-and-Gradient RW-CEGAR",
@@ -94,4 +99,5 @@ def build_model(n: int, variant=None, **kwargs):
     return model
 
 
-__all__ = ["PROPOSALS", "get_proposal", "build_model", "CNN_RW_CEGAR_P1", "CNN_RW_CEGAR_P2"]
+__all__ = ["PROPOSALS", "get_proposal", "build_model",
+           "CNN_RW_CEGAR_P1", "CNN_RW_CEGAR_P2", "CNN_RW_CEGAR_P3"]
