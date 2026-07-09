@@ -77,8 +77,11 @@ def scan_all_files():
     recs, skipped = [], []
     for f in files:
         try:
-            df = pd.read_csv(os.path.join(DATA_DIR, f), low_memory=False,
-                             on_bad_lines="skip").dropna()
+            # read ONLY the Label column (low_memory=False avoids the usecols+chunk
+            # bug; skips the wide feature columns -> much faster on files like the
+            # 248-feature OPPORTUNITY series)
+            df = pd.read_csv(os.path.join(DATA_DIR, f), usecols=["Label"],
+                             low_memory=False, on_bad_lines="skip")
             raw = pd.to_numeric(df["Label"], errors="coerce").dropna()
         except Exception as e:
             skipped.append((f, str(e).splitlines()[0][:80]))
@@ -95,6 +98,63 @@ def scan_all_files():
         print(f"  [warn] skipped {len(skipped)} unreadable file(s): "
               + ", ".join(s[0] for s in skipped), flush=True)
     return recs
+
+
+def _anomaly_density(blocks, rows, nbins=400):
+    """Per-bin anomaly fraction over [0, rows] -> [nbins] in [0,1]. Built from block
+    spans (no full label needed); makes sparse/short anomalies visible on long series."""
+    dens = np.zeros(nbins)
+    if rows <= 0:
+        return dens
+    edges = np.linspace(0, rows, nbins + 1)
+    width = rows / nbins
+    for s, e in blocks:
+        e1 = e + 1                                  # end-exclusive
+        lo = int(s / rows * nbins)
+        hi = min(int((e1 - 1) / rows * nbins), nbins - 1)
+        for b in range(lo, hi + 1):
+            overlap = max(0.0, min(e1, edges[b + 1]) - max(s, edges[b]))
+            dens[b] += overlap / width
+    return np.clip(dens, 0.0, 1.0)
+
+
+def plot_corpus_timelines(recs):
+    """One stacked figure: per-collection anomaly-DENSITY strip (where the anomalies
+    sit across the series, binned so they stay visible on long series). Drawn from the
+    block spans already in ``recs`` (no reload). Representative = the series with the
+    most anomaly blocks in that collection (richest distribution)."""
+    by_coll = {}
+    for r in recs:
+        by_coll.setdefault(r["collection"], []).append(r)
+    colls = sorted(by_coll, key=lambda c: -len(by_coll[c]))     # big collections first
+    reps = {c: max(by_coll[c], key=lambda r: r["n_blocks"]) for c in colls}
+
+    n = len(colls)
+    fig, axes = plt.subplots(n, 1, figsize=(11, 0.5 * n + 1))
+    if n == 1:
+        axes = [axes]
+    for ax, c in zip(axes, colls):
+        r = reps[c]
+        dens = _anomaly_density(r["blocks"], r["rows"])
+        ax.imshow(dens[np.newaxis, :], aspect="auto", cmap="Reds", vmin=0, vmax=1,
+                  extent=[0, 1, 0, 1])                # normalized time 0..1
+        ax.set_xlim(0, 1)
+        ax.set_yticks([])
+        ax.set_xticks([])
+        ax.set_ylabel(c, rotation=0, ha="right", va="center", fontsize=8)
+        ax.set_title(f"n={len(by_coll[c])} · {r['anom_pct']:.1f}% anom · {r['n_blocks']} "
+                     f"blocks · med len {r['blk_med']:.0f} · {r['shape']}",
+                     fontsize=7, loc="left")
+    axes[-1].set_xticks([0, 0.25, 0.5, 0.75, 1.0])
+    axes[-1].set_xlabel("normalized time (0 = start, 1 = end of the representative series)")
+    fig.suptitle("TSB-AD-M anomaly distribution — per-collection density (red = anomalous)",
+                 fontsize=10)
+    fig.tight_layout(rect=[0, 0, 1, 0.99])
+    os.makedirs(FIG_DIR, exist_ok=True)
+    out = os.path.join(FIG_DIR, "corpus_anomaly_timelines.png")
+    fig.savefig(out, dpi=130)
+    plt.close(fig)
+    return out
 
 
 def write_corpus_doc(recs):
@@ -148,6 +208,23 @@ def write_corpus_doc(recs):
             f"{r.blk_med_med:.0f} | {int(r.blk_max):,} | {r.dominant_shape} "
             f"({r.shape_mix}) |"
         )
+
+    # anomaly-distribution timelines (where the anomalies sit across the series)
+    fig_path = plot_corpus_timelines(recs)
+    fig_rel = os.path.relpath(fig_path, HERE)
+    lines += [
+        "",
+        "## Anomaly distribution (timelines)",
+        "",
+        "Where the anomalies sit across time, for the most-fragmented (most blocks) "
+        "representative series of each collection (red = anomaly span). This shows the "
+        "distribution pattern behind the shape label above: a few long red bands "
+        "(block-like: gecco/SMAP/MITDB) vs many thin scattered ticks (point-like: "
+        "creditcard/TAO).",
+        "",
+        f"![anomaly distribution timelines]({fig_rel})",
+    ]
+
     md_out = os.path.join(HERE, "dataset_anomaly_structure.md")
     with open(md_out, "w") as fh:
         fh.write("\n".join(lines) + "\n")

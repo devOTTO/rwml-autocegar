@@ -13,7 +13,7 @@ All 200 series across 17 collections in `/ocean/projects/cis260190p/yhwang2/data
 | SVDB |  | 31 | 6,420,800 | 4.87% (0.45–12.06) | 147 | 7,000 | block-like (block-like:31) |
 | Exathlon |  | 27 | 1,643,718 | 9.83% (6.28–12.62) | 982 | 1,961 | block-like (block-like:27) |
 | SMAP | ★ | 27 | 212,109 | 2.94% (0.41–13.66) | 101 | 1,121 | block-like (block-like:27) |
-| GHL |  | 25 | 4,919,591 | 1.15% (0.49–3.25) | 1036 | 1,863 | block-like (block-like:25) |
+| GHL |  | 25 | 4,919,718 | 1.15% (0.49–3.25) | 1009 | 1,863 | block-like (block-like:24, point-like:1) |
 | SMD | ★ | 22 | 560,260 | 3.81% (0.42–11.95) | 40 | 1,215 | block-like (block-like:16, mixed:6) |
 | MSL |  | 16 | 49,910 | 5.11% (0.60–13.07) | 112 | 301 | block-like (block-like:15, mixed:1) |
 | MITDB | ★ | 13 | 4,370,000 | 2.77% (0.16–12.41) | 433 | 18,610 | block-like (block-like:13) |
@@ -27,3 +27,9 @@ All 200 series across 17 collections in `/ocean/projects/cis260190p/yhwang2/data
 | Genesis |  | 1 | 16,220 | 0.31% (0.31–0.31) | 22 | 26 | block-like (block-like:1) |
 | GECCO | ★ | 1 | 138,521 | 1.25% (1.25–1.25) | 22 | 253 | block-like (block-like:1) |
 | Daphnet |  | 1 | 38,774 | 5.95% (5.95–5.95) | 418 | 664 | block-like (block-like:1) |
+
+## Anomaly distribution (timelines)
+
+Where the anomalies sit across time, for the most-fragmented (most blocks) representative series of each collection (red = anomaly span). This shows the distribution pattern behind the shape label above: a few long red bands (block-like: gecco/SMAP/MITDB) vs many thin scattered ticks (point-like: creditcard/TAO).
+
+![anomaly distribution timelines](figures/corpus_anomaly_timelines.png)
