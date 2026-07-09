@@ -29,14 +29,33 @@ characterization set (SMAP/SMD/MITDB — domain / anomaly-type diversity).
 
 | collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P2 AUC-PR | **Δ (P2−RW-1)** | P2 AUC-ROC |
 |---|:-:|:--:|:--:|:--:|:--:|:--:|
-| GECCO | 1 | 0.454 | 0.639 | 0.205 | **−0.434** | 0.778 |
+| GECCO | 1 | 0.454 | 0.639 | 0.220 | **−0.419** | 0.800 |
 | SMD | 22 | 0.396 | 0.233 | 0.038 | **−0.195** | 0.475 |
-| CreditCard | 1 | 0.147 | 0.111 | 0.002 | **−0.110** | 0.469 |
-| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.034 | **−0.104** | 0.338 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.002 | **−0.109** | 0.440 |
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.033 | **−0.105** | 0.345 |
 | SMAP | 27 | 0.146 | 0.119 | 0.069 | **−0.050** | 0.583 |
 | MITDB | 13 | 0.166 | 0.089 | 0.087 | **−0.002** | 0.603 |
 
-**P2 beats RW-1 on 0/6 collections.**
+**P2 beats RW-1 on 0/6 collections.** Verdict rows (GECCO/CreditCard/OPPORTUNITY) are
+from the §8.4 re-run; the characterization rows (SMD/SMAP/MITDB) are the prior
+collection run (re-run in progress — magnitudes indicative, verdict unchanged).
+
+### Correction diagnostics (thesis §8.4, verdict set)
+`Overlap` = of top-5% |correction| timesteps, fraction anomalous (precision);
+`AnomalyCoverage` = of anomalies, fraction in the top-5% |correction| (recall);
+`corr@anom/norm` = anomaly-vs-normal correction ratio; `gate→label AUC` = gate
+localization. Contrast with P1, whose GECCO gate localizes at AUC 0.90.
+
+| collection | gate→label AUC | corr@anom/norm | Overlap | AnomalyCoverage |
+|---|:--:|:--:|:--:|:--:|
+| GECCO | 0.531 | 2.60 | 0.128 | 0.512 |
+| CreditCard | 0.433 | 0.98 | 0.001 | 0.035 |
+| OPPORTUNITY | 0.171 | 0.93 | 0.026 | 0.025 |
+
+The gate never localizes (all AUC ≤ 0.53, vs P1's 0.90 on GECCO). GECCO shows the
+only above-1 correction concentration (2.6×, coverage 0.51), but with a near-random
+gate (0.53) this is RW-1-native residual growth, not gate-driven targeting — the same
+reading as the per-series diagnostics below.
 
 ## Interpretability — why P2 loses (per-series id_1 diagnostics)
 
