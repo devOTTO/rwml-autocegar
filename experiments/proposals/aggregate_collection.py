@@ -36,6 +36,13 @@ def main():
     df = df[pd.to_numeric(df["auc_pr"], errors="coerce").notna()].copy()
     df["auc_pr"] = df["auc_pr"].astype(float)
     df["auc_roc"] = df["auc_roc"].astype(float)
+    # VERDICT = default config only (sweep rows share the same CSV): tau=2, lam=1,
+    # base variant (basic/mc5), tau_u=0. Filter so sweeps don't pollute the mean.
+    for col, val in [("tau", 2.0), ("lam", 1.0)]:
+        df = df[pd.to_numeric(df[col], errors="coerce") == val]
+    df = df[df["variant"].isin(["basic", "mc5"])]
+    if "tau_u" in df.columns:
+        df = df[pd.to_numeric(df["tau_u"], errors="coerce").fillna(0.0) == 0.0]
 
     g = df.groupby("collection").agg(n=("auc_pr", "size"),
                                      p_pr=("auc_pr", "mean"),
