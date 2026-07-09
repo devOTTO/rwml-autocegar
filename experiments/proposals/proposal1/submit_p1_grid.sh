@@ -11,7 +11,7 @@
 #SBATCH --output=logs/p1-grid_%A_%a.out
 #SBATCH --error=logs/p1-grid_%A_%a.err
 #
-# Proposal-1 fail-fast grid (see experiments/proposals/p1_grid.txt).
+# Proposal-1 fail-fast grid (see experiments/proposals/proposal1/p1_grid.txt).
 # One array task per line of the grid file. Each task runs run_proposal.py with
 # those args and logs to wandb (per-epoch curve + final AUC/delta).
 #
@@ -28,7 +28,7 @@ cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
 
 export WANDB_MODE=offline   # sync to online project afterward (see header)
 
-GRID=experiments/proposals/p1_grid.txt
+GRID=experiments/proposals/proposal1/p1_grid.txt
 LINE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$GRID")
 echo "[task ${SLURM_ARRAY_TASK_ID}] python run_proposal.py ${LINE}"
 eval "python run_proposal.py ${LINE}"

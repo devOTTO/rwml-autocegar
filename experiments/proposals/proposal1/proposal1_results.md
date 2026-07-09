@@ -137,7 +137,7 @@ Selective ≈ basic — no meaningful improvement.
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
-sbatch experiments/proposals/submit_p1_coll.sh       # collection-level, per-series array
+sbatch experiments/proposals/proposal1/submit_p1_coll.sh       # collection-level, per-series array
 python experiments/proposals/aggregate_collection.py --proposal 1   # -> collection table
 wandb sync --include-offline ./wandb/offline-run-<date>_*
 ```

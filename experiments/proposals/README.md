@@ -7,10 +7,11 @@ disconnected, spanning the RW-vs-DeepAnT performance range). If a proposal beats
 the RW-1 baseline on all three it graduates to a full run; otherwise we move on to
 the next proposal.
 
-**Implemented:** P1 (Residual-Gated, variants `basic`/`selective`) and P2
-(Uncertainty-Aware, MC-dropout, variants `mc5`/`mc10`). P3–P5 are reserved slots.
-**Both lost to RW-1 at the collection level** (P1 0/3, P2 0/6) → see
-`proposal1_results.md`, `proposal2_results.md`. Next: P3.
+**Implemented:** P1 (Residual-Gated, `basic`/`selective`), P2 (Uncertainty-Aware
+MC-dropout, `mc5`/`mc10`), P3 (Correction-Consistency, full docx spec,
+`full`/`preserve_only`/`soft`). P4–P5 are reserved slots. **All lost to RW-1 at the
+collection level** (P1 0/3, P2 0/6, P3 0/3) → see `proposalN/proposalN_results.md`.
+Next: P4.
 
 **Evaluation unit = whole collection.** `--dataset` accepts a raw TSB-AD-M series
 filename, so `submit_pN_coll.sh` runs one array task per series and
@@ -18,12 +19,18 @@ filename, so `submit_pN_coll.sh` runs one array task per series and
 compares against the reproduction RW-1 / DeepAnT per-collection means (reference).
 The single-`--dataset` / `all` mode remains for quick one-series screens.
 
-- Model code:     `autocegar/proposals/proposalN.py` (+ registry in `__init__.py`)
+- Model code:     `autocegar/proposals/proposalN.py` (+ registry in `__init__.py`;
+                  P3 has its own base `autocegar/rw_cegar_p3.py`).
 - Runner:         `run_proposal.py` (repo root)
-- Grid + submit:  `experiments/proposals/pN_grid.txt`, `submit_pN_grid.sh`
-- Results:        `experiments/proposals/results_pN.csv` (raw, gitignored),
-                  `proposalN_results.md` (written up by hand), wandb project
-                  `rwml-autocegar`.
+- Per-proposal:   `experiments/proposals/proposalN/` — grids (`pN_*_grid.txt`),
+                  submit scripts (`submit_pN*.sh`), `collection_table_pN.md`, and
+                  the write-up `proposalN_results.md`.
+- Shared (root):  `aggregate_collection.py`, `aggregate_sweep.py`, `label_stats.py`,
+                  `plot_correction_example.py`, `log_proposal_summary_to_wandb.py`,
+                  `dataset_anomaly_structure.md`, `figures/`, `auto_grid.txt` +
+                  `submit_auto.sh` (P1+P2 auto ablation).
+- Results:        `experiments/proposals/results_pN.csv` (raw, gitignored, written
+                  by the runner), wandb project `rwml-autocegar`.
 
 ## 0. Setup (every session)
 
@@ -74,7 +81,7 @@ them as a slurm array (P1: 11 tasks, `%6` concurrency, wandb **offline** on the
 compute node).
 
 ```bash
-sbatch experiments/proposals/submit_p1_grid.sh
+sbatch experiments/proposals/proposal1/submit_p1_grid.sh
 squeue -u $USER                       # watch progress
 sacct -j <jobid> --format=JobID,JobName,Elapsed,State   # per-task timing
 ```

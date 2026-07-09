@@ -11,7 +11,7 @@
 #SBATCH --output=logs/p2-grid_%A_%a.out
 #SBATCH --error=logs/p2-grid_%A_%a.err
 #
-# Proposal-2 fail-fast grid (see experiments/proposals/p2_grid.txt).
+# Proposal-2 fail-fast grid (see experiments/proposals/proposal2/p2_grid.txt).
 # One array task per grid line. P2 = MC-dropout uncertainty confidence, so each
 # task is slower than P1 (K extra forward passes/batch) -> 1h30 time limit.
 # wandb offline on the compute node; sync afterward:
@@ -21,7 +21,7 @@ mkdir -p logs
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
 export WANDB_MODE=offline
-GRID=experiments/proposals/p2_grid.txt
+GRID=experiments/proposals/proposal2/p2_grid.txt
 LINE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$GRID")
 echo "[task ${SLURM_ARRAY_TASK_ID}] python run_proposal.py ${LINE}"
 eval "python run_proposal.py ${LINE}"

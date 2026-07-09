@@ -11,7 +11,7 @@
 #SBATCH --output=logs/p2-char_%A_%a.out
 #SBATCH --error=logs/p2-char_%A_%a.err
 #
-# Proposal-2 CHARACTERIZATION grid (see experiments/proposals/p2_char_grid.txt).
+# Proposal-2 CHARACTERIZATION grid (see experiments/proposals/proposal2/p2_char_grid.txt).
 # NOT the fail-fast verdict — tests the hypothesis "P2 helps where anomalies are
 # genuinely uncertain (satellite telemetry), is neutral on industrial (SMD), and
 # hurts on periodic signals (ECG/MITDB, like gecco)". Each task = P2 mc5 + RW-1
@@ -22,7 +22,7 @@ mkdir -p logs
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
 export WANDB_MODE=offline
-GRID=experiments/proposals/p2_char_grid.txt
+GRID=experiments/proposals/proposal2/p2_char_grid.txt
 LINE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" "$GRID")
 echo "[char task ${SLURM_ARRAY_TASK_ID}] python run_proposal.py ${LINE}"
 eval "python run_proposal.py ${LINE}"

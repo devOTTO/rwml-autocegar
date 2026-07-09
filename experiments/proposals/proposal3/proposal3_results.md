@@ -93,7 +93,7 @@ that RW-1 already maximises ungated.
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
-sbatch experiments/proposals/submit_p3_coll.sh        # 30 tasks = 10 series x 3 variants
+sbatch experiments/proposals/proposal3/submit_p3_coll.sh        # 30 tasks = 10 series x 3 variants
 python experiments/proposals/aggregate_collection.py --proposal 3   # full-variant table
 wandb sync --include-offline ./wandb/offline-run-<date>_*
 ```

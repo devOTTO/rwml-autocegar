@@ -17,7 +17,7 @@ mkdir -p logs
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
 export WANDB_MODE=offline
-LINE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" experiments/proposals/rw1corr_grid.txt)
+LINE=$(sed -n "${SLURM_ARRAY_TASK_ID}p" experiments/proposals/proposal3/rw1corr_grid.txt)
 echo "[rw1corr ${SLURM_ARRAY_TASK_ID}] $LINE"
 eval "python run_proposal.py ${LINE}"
 echo "Done ${SLURM_ARRAY_TASK_ID}: $(date)"

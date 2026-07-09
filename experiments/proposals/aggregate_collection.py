@@ -70,7 +70,11 @@ def main():
     print("* DeepAnT / RW-1 = reproduction per-collection means (best-HP/200ep, "
           "TSB-AD eval) — reference; P is 100ep collection mean over the series shown (n).")
 
-    out = os.path.join(HERE, f"collection_table_p{args.proposal}.md")
+    # per-proposal outputs live in experiments/proposals/proposalN/ (results_pN.csv
+    # is still written to HERE by run_proposal.py)
+    out_dir = os.path.join(HERE, f"proposal{args.proposal}")
+    os.makedirs(out_dir, exist_ok=True)
+    out = os.path.join(out_dir, f"collection_table_p{args.proposal}.md")
     with open(out, "w") as f:
         f.write(table + f"\n\n{label}: beats RW-1 on {improved}/{len(g)} collections.\n")
     print(f"\n[table saved -> {out}]")

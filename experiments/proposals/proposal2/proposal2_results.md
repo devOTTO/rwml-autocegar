@@ -140,7 +140,7 @@ characterization hypothesis is not supported.
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
-sbatch experiments/proposals/submit_p2_coll.sh       # 72-series collection array
+sbatch experiments/proposals/proposal2/submit_p2_coll.sh       # 72-series collection array
 python experiments/proposals/aggregate_collection.py --proposal 2
 wandb sync --include-offline ./wandb/offline-run-<date>_*
 ```
