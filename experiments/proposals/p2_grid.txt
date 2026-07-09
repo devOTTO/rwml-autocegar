@@ -1,0 +1,10 @@
+--proposal 2 --dataset opportunity --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag stage1 --tag interp
+--proposal 2 --dataset gecco --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag stage1 --tag interp
+--proposal 2 --dataset creditcard --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag stage1 --tag interp
+--proposal 2 --dataset gecco --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --extra tau_u=-1.0 --tag stage2-tauU --tag interp
+--proposal 2 --dataset gecco --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --extra tau_u=1.0 --tag stage2-tauU --tag interp
+--proposal 2 --dataset gecco --variant mc5 --tau 2.0 --lam 0.5 --epochs 100 --warmup 10 --tag stage3-lam --tag interp
+--proposal 2 --dataset gecco --variant mc5 --tau 2.0 --lam 2.0 --epochs 100 --warmup 10 --tag stage3-lam --tag interp
+--proposal 2 --dataset opportunity --variant mc10 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage4-mc10 --tag interp
+--proposal 2 --dataset gecco --variant mc10 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage4-mc10 --tag interp
+--proposal 2 --dataset creditcard --variant mc10 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --tag stage4-mc10 --tag interp

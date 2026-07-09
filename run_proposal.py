@@ -77,6 +77,28 @@ def evaluate(scores, label):
     return average_precision_score(y, s), roc_auc_score(y, s)
 
 
+def parse_extra(pairs):
+    """Parse repeatable ``--extra key=val`` into a kwargs dict for build_model.
+
+    Lets each proposal take its own hyperparameters without new CLI flags
+    (e.g. P2 `--extra tau_u=1.0 --extra mc_samples=8`). Values are coerced to
+    int, then float, else kept as string.
+    """
+    out = {}
+    for p in pairs or []:
+        if "=" not in p:
+            continue
+        k, v = p.split("=", 1)
+        for cast in (int, float):
+            try:
+                v = cast(v)
+                break
+            except ValueError:
+                pass
+        out[k.strip()] = v
+    return out
+
+
 def gate_interpretability(scores, gate_per_t, label, thr=0.5):
     """Was the gate triggered AT anomalies, and did correction concentrate there?
 
@@ -176,24 +198,28 @@ def run_one(args, dataset_key):
             brun.finish()
 
     # ── the proposal model (own wandb run; delta goes in its summary) ──
+    extra = parse_extra(args.extra)
     model = build_model(
         args.proposal, variant=args.variant,
         lam=args.lam, tau=args.tau, k=args.k,
-        warmup_epochs=args.warmup, **common)
+        warmup_epochs=args.warmup, **common, **extra)
     entry = get_proposal(args.proposal)
     prop_cfg = {**shared_cfg, "model": entry["name"], "proposal": args.proposal,
                 "variant": args.variant, "lam": args.lam, "tau": args.tau, "k": args.k,
                 "conf_mode": getattr(model, "conf_mode", None),
                 "conf_q": getattr(model, "conf_q", None),
+                "mc_samples": getattr(model, "mc_samples", None),
+                "tau_u": getattr(model, "tau_u", None),
                 "warmup_epochs": args.warmup, "scale_normalize": model.scale_normalize,
                 "correction_init": model.correction_init, "score": "mean|correction|"}
+    extra_suffix = ("-" + "_".join(f"{k}{v}" for k, v in extra.items())) if extra else ""
     prun, scores = fit_with_wandb(
         model, data,
-        run_name=f"P{args.proposal}-{args.variant}-{dataset_key}-ep{args.epochs}-t{args.tau}-l{args.lam}",
+        run_name=f"P{args.proposal}-{args.variant}-{dataset_key}-ep{args.epochs}-t{args.tau}-l{args.lam}{extra_suffix}",
         group=f"proposal{args.proposal}",
         tags=[f"P{args.proposal}", args.variant, dataset_key,
               f"tau{args.tau}", f"lam{args.lam}", f"ep{args.epochs}"] + list(args.tag),
-        config={**prop_cfg, "tags": list(args.tag)}, enabled=wb)
+        config={**prop_cfg, **extra, "tags": list(args.tag)}, enabled=wb)
     pr, roc = evaluate(scores, label)
     print(f"\n>> P{args.proposal}-{args.variant} {dataset_key}: AUC-PR={pr:.4f} AUC-ROC={roc:.4f}", flush=True)
 
@@ -269,6 +295,8 @@ def main():
                    help="disable wandb logging (default: on if WANDB_ENABLED!=0)")
     p.add_argument("--tag", action="append", default=[],
                    help="extra wandb tag (repeatable), e.g. --tag stage1")
+    p.add_argument("--extra", action="append", default=[],
+                   help="proposal-specific kwarg key=val (repeatable), e.g. --extra tau_u=1.0")
     args = p.parse_args()
 
     entry = get_proposal(args.proposal)

@@ -7,6 +7,10 @@ disconnected, spanning the RW-vs-DeepAnT performance range). If a proposal beats
 the RW-1 baseline on all three it graduates to a full run; otherwise we move on to
 the next proposal.
 
+**Implemented:** P1 (Residual-Gated, variants `basic`/`selective`) and P2
+(Uncertainty-Aware, MC-dropout, variants `mc5`/`mc10`). P3–P5 are reserved slots
+in the registry. P1 verdict: lost to RW-1 on all 3 → see `proposal1_results.md`.
+
 - Model code:     `autocegar/proposals/proposalN.py` (+ registry in `__init__.py`)
 - Runner:         `run_proposal.py` (repo root)
 - Grid + submit:  `experiments/proposals/pN_grid.txt`, `submit_pN_grid.sh`
@@ -33,6 +37,9 @@ Grab a GPU, then run the runner directly:
 interact -p GPU-shared --gres=gpu:v100-32:1 -t 1:00:00      # get a GPU node
 python run_proposal.py --proposal 1 --dataset opportunity --variant basic \
     --baseline --epochs 100 --warmup 10
+# P2 (MC-dropout uncertainty), with a proposal-specific hyperparameter:
+python run_proposal.py --proposal 2 --dataset gecco --variant mc5 \
+    --baseline --extra tau_u=1.0
 ```
 
 Key flags (`python run_proposal.py --help` for all):
@@ -41,9 +48,10 @@ Key flags (`python run_proposal.py --help` for all):
 |---|---|---|
 | `--proposal N` | which proposal (1–5) | 1 |
 | `--dataset` | `opportunity` / `gecco` / `creditcard` / `all` | all |
-| `--variant` | proposal variant (P1: `basic` / `selective`) | proposal default |
+| `--variant` | proposal variant (P1: `basic`/`selective`; P2: `mc5`/`mc10`) | proposal default |
 | `--epochs` / `--warmup` | training length / forecaster-only warm-up | 100 / 10 |
 | `--lam` / `--tau` / `--k` | gate strength / robust-z threshold / sharpness | 1.0 / 2.0 / 1.0 |
+| `--extra key=val` | proposal-specific kwarg, repeatable (e.g. P2 `--extra tau_u=1.0`) | — |
 | `--baseline` | also run plain RW-1 and log the delta | off |
 | `--tag` | extra wandb tag (repeatable), e.g. `--tag stage1` | — |
 | `--no-wandb` | disable wandb logging | wandb on |
