@@ -30,13 +30,30 @@ collections; opportunity = mean over its 8 series).
 
 | collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P1 AUC-PR | **Δ (P1−RW-1)** | P1 AUC-ROC |
 |---|:-:|:--:|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.063 | **−0.075** | 0.419 |
-| GECCO | 1 | 0.454 | 0.639 | 0.472 | **−0.167** | 0.920 |
-| CreditCard | 1 | 0.147 | 0.111 | 0.003 | **−0.108** | 0.610 |
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.068 | **−0.070** | 0.427 |
+| GECCO | 1 | 0.454 | 0.639 | 0.486 | **−0.153** | 0.930 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.004 | **−0.108** | 0.617 |
 
 **P1 beats RW-1 on 0/3 collections.** The opportunity collection mean (8 series)
 confirms the earlier single-series screen — P1 does not recover at collection level.
 DeepAnT is strongest on opportunity/creditcard, RW-1 on gecco; P1 is never best.
+
+### Correction diagnostics (thesis §8.4)
+`Overlap` = of high-|correction| timesteps (top 5%), fraction that are anomalies
+(precision); `AnomalyCoverage` = of anomalies, fraction that are high-|correction|
+(recall); `corr@anom/norm` = anomaly-vs-normal correction ratio; `gate→label AUC`
+= how well the gate localizes anomalies.
+
+| collection | gate→label AUC | corr@anom/norm | Overlap | AnomalyCoverage |
+|---|:--:|:--:|:--:|:--:|
+| GECCO | 0.90 | 5.28 | 0.204 | **0.820** |
+| CreditCard | 0.95 | 1.05 | 0.005 | 0.140 |
+| OPPORTUNITY | 0.48 | 0.98 | 0.070 | 0.055 |
+
+On GECCO the gate localizes anomalies (AUC 0.90) and correction concentrates there
+(5.3×, covering 82% of anomalies) — P1 "corrects the anomalies away," which is why
+its highest-signal collection loses the most. On opportunity the gate is
+uninformative (AUC 0.48).
 
 ## Interpretability (why it fails)
 Matches the risk the proposal flagged: the gate correctly localizes anomalies
