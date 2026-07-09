@@ -244,11 +244,11 @@ def run_one(args, dataset_key):
     if base_pr is not None:
         print(f">> DELTA AUC-PR (proposal - RW1) = {pr - base_pr:+.4f}", flush=True)
 
-    log_result(args, dataset_key, pr, roc, base_pr, base_roc)
+    log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=model, extra=extra)
     return pr, roc
 
 
-def log_result(args, dataset_key, pr, roc, base_pr, base_roc):
+def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=None):
     os.makedirs(RESULTS_DIR, exist_ok=True)
     path = os.path.join(RESULTS_DIR, f"results_p{args.proposal}.csv")
     row = {
@@ -262,6 +262,12 @@ def log_result(args, dataset_key, pr, roc, base_pr, base_roc):
         "delta_pr": None if base_pr is None else round(float(pr - base_pr), 4),
         "epochs": args.epochs, "warmup": args.warmup,
         "lam": args.lam, "tau": args.tau, "k": args.k,
+        # proposal-specific swept params so sweep rows are distinguishable in the
+        # CSV (P1 conf_mode; P2 mc_samples/tau_u). Absent ones log as None.
+        "conf_mode": getattr(model, "conf_mode", None),
+        "mc_samples": getattr(model, "mc_samples", None),
+        "tau_u": getattr(model, "tau_u", None),
+        "extra": (";".join(f"{k}={v}" for k, v in extra.items()) if extra else ""),
         "window": args.window, "batch": args.batch, "l1_weight": args.l1_weight,
     }
     write_header = not os.path.exists(path)

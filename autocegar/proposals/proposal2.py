@@ -8,7 +8,7 @@ straight from the doc's equations (not a robust-z adaptation):
     Ŷ_t^m = f_θ^m(W_t),  m = 1..M          # M MC-dropout forward passes
     μ_t   = (1/M) Σ_m Ŷ_t^m                # MC mean prediction
     u_t   = (1/M) Σ_m ‖Ŷ_t^m − μ_t‖²       # predictive uncertainty (variance, summed over dims)
-    e_t   = ‖Y_t − μ_t‖ / (u_t + ε)        # wrongness = residual (vs MC mean) STANDARDIZED by uncertainty
+    e_t   = ‖Y_t − μ_t‖ / √(u_t + ε)       # wrongness = residual (vs MC mean) STANDARDIZED by uncertainty
     g_err,t  = σ(k_e · (e_t − τ_e))
     g_conf,t = σ(k_c · (τ_u − u_t))         # confidence: raw u_t, high when uncertainty is low
     g_t = g_err,t · g_conf,t
@@ -80,7 +80,7 @@ class CNN_RW_CEGAR_P2(CNN_RW_CEGAR):
         u_t = preds.var(dim=0, unbiased=False).sum(dim=1)           # u_t   [B]  (= (1/M)Σ‖·‖²)
 
         resid = torch.norm(target - mu, dim=1)                      # ‖Y_t − μ_t‖   [B]
-        e_t = resid / (u_t + self.unc_eps)                          # standardized residual [B]
+        e_t = resid / torch.sqrt(u_t + self.unc_eps)                # standardized residual [B] (doc: /√(u_t+ε))
 
         ku = self.k_u if self.k_u is not None else self.k
         g_err = torch.sigmoid(self.k * (e_t - self.tau))           # σ(k_e (e_t − τ_e))
