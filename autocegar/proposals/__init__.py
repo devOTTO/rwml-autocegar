@@ -47,13 +47,15 @@ PROPOSALS = {
     3: {
         "name": "RW-Correction-Consistency CEGAR",
         "cls": CNN_RW_CEGAR_P3,
-        "summary": "Gate from correction magnitude x persistence over epochs; write-back "
-                   "SUPPRESSED on confident corrections (preserve, not erase). Stage 1.",
+        "summary": "Gate = correction magnitude x direction-stability over epochs; drives "
+                   "gradient amplification AND a preserve (suppress) write-back (keep the "
+                   "correction as evidence, not erase). Full docx spec.",
         "variants": {
-            "preserve":      {"gamma": 0.9},   # strong preserve (freeze confident corrections)
-            "preserve_soft": {"gamma": 0.5},   # gentler suppression
+            "full":          {"gamma": 0.9, "amplify": True},   # docx: amp + preserve write-back
+            "preserve_only": {"gamma": 0.9, "amplify": False},  # ablation: write-back only (lam=0)
+            "soft":          {"gamma": 0.5, "amplify": True},   # gentler preserve
         },
-        "default_variant": "preserve",
+        "default_variant": "full",
     },
     4: {
         "name": "Dual-Gate Residual-and-Gradient RW-CEGAR",

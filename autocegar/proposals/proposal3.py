@@ -1,35 +1,39 @@
-"""Proposal 3 - RW-Correction-Consistency CEGAR (Stage 1).
+"""Proposal 3 - RW-Correction-Consistency CEGAR (docx-faithful, full).
 
 ================================ WHAT THIS IS ================================
 The signal is the RW correction's OWN behaviour, not the residual (P1) or the
-predictive uncertainty (P2). A point that is corrected large AND consistently over
-epochs is a "confident RW anomaly candidate", and P3's key move is to STOP writing
-there (preserve the correction as evidence) instead of reshaping it away, which is
-what sinks P1/P2 (their gate finds anomalies and then "corrects them away", lowering
-the |correction| score).
+predictive uncertainty (P2). A point that is corrected large AND in a consistent
+direction over epochs is a "confident RW anomaly candidate". P3's move is to
+PRESERVE the correction there (as anomaly evidence) instead of reshaping it away,
+which is what sinks P1/P2 (their gate finds anomalies and then "corrects them away",
+lowering the |correction| score).
 
-Stage 1 (this file) implements the persistence + preserve-write-back core:
-    d_t   = mean_feat |C_t|                          # per-timestep correction magnitude
-    pi_t  = alpha*pi_t + (1-alpha)*1(d_t > Q_q(d))   # persistence: consistently large?
-    g_t   = pi_t                                     # confident (consistent) candidate
-    write-back:  grad_C <- grad_C * (1 - gamma*g_t)  # SUPPRESS writes on those points
+This implements the docx Proposal-3 formulation directly (no staging):
 
-So a point that keeps landing in the top (1-corr_q) of correction magnitude, epoch
-after epoch, gets its correction frozen (preserved) rather than further updated.
+    d_t^e      = mean_feat |C_t^e|                              # correction magnitude
+    v_t^e      = cos( C_t^e − C_t^{e-1} , C_t^{e-1} − C_t^{e-2} )   # direction stability
+    g_corr,t   = σ( k_d · (d_t − τ_d) / sd(d) ),  τ_d = Q_{corr_q}(d)
+    g_stab,t   = σ( k_v · (v_t − τ_v) )
+    g_t        = g_corr,t · g_stab,t                            # persistence-EMA smoothed
 
-Isolation: the model-gradient CEGAR gate (P1/P2's ScaleGrad path) is turned OFF here
-(`lam=0`, so the amplification scale is 1) so this run measures ONLY the effect of
-the preserve-write-back. Everything else (warm-up, correction optimizer, epoch-wise
-RW-1 step, score = mean|correction|, logging) is inherited from `CNN_RW_CEGAR`.
+Both docx mechanisms are on:
+  1. Gradient amplification — g_t drives the per-window model/correction gradient via
+     the inherited ScaleGrad path (scale = 1 + λ·g_win), amplifying updates on windows
+     overlapping stable-corrected points. g_win for epoch e uses epoch e−1's g_t (the
+     current epoch's correction is not finalized until its epoch-end step).
+  2. Preserve write-back — the epoch-wise RW correction step is suppressed on those
+     points: grad_C ← grad_C · (1 − γ·g_t)  (docx "more safely" variant η_C(1−γg)).
 
-Only two things are overridden: `_writeback_scale` (the new base hook) applies the
-(1-gamma*g) suppression; `fit` then exposes P3's persistence gate as `gate_per_t`
-for the interpretability metrics (the inherited gate_per_t would be ~0 with lam=0).
+Note the docx lists both mechanisms together; they pull in opposite directions
+(amplify grows the correction, preserve freezes it), so their net effect is
+empirical — this run measures exactly that. The `preserve_only` variant (λ=0) isolates
+the write-back for an ablation.
 
-Stage 2 (later): add direction stability v_t = cos(dC^(e), dC^(e-1)) into the gate
-(g = g_corr * g_stab) and optionally re-enable the correction-consistency gate on the
-model gradient. The base hook already receives the full correction each epoch, so the
-epoch-to-epoch history needed for v_t can be stashed here without further base changes.
+Inherited unchanged from `CNN_RW_CEGAR`: warm-up, RW-1 epoch-wise correction step,
+L1 penalty, forward loss RMSE(X+C, Y+C)+α‖C‖₁, score = mean|correction|, logging.
+Only `_compute_signals` (amplification gate) and `_writeback_scale` (gate compute +
+preserve write-back) are overridden; `fit` exposes the consistency gate as
+`gate_per_t` for the interpretability metrics.
 =============================================================================
 """
 import numpy as np
@@ -37,53 +41,98 @@ import torch
 
 from autocegar.rw_cegar import CNN_RW_CEGAR
 
+_EPS = 1e-8
+
 
 class CNN_RW_CEGAR_P3(CNN_RW_CEGAR):
-    """Proposal 3 = correction-magnitude x persistence gate, preserve-write-back.
+    """Proposal 3 = (correction-magnitude x direction-stability) gate, driving BOTH
+    gradient amplification and a preserve (suppress) write-back.
 
     New hyperparameters beyond the base:
-        gamma          write-back suppression strength; grad *= (1 - gamma*g),
+        gamma          write-back suppression strength; grad_C *= (1 - gamma*g),
                        gamma=1 fully freezes confident-anomaly corrections.
-        corr_q         quantile of |correction| defining "large" this epoch (0.95).
-        persist_alpha  EMA factor for the persistence indicator across epochs (0.9).
-    Reused-with-P3-defaults: lam=0 (model-gradient gate off, Stage-1 isolation),
-        warmup_epochs (10), correction_init ('zero').
+        corr_q         quantile of |correction| defining tau_d ("large") each epoch.
+        k_d, k_v       sigmoid sharpness for the magnitude / stability gates.
+        tau_v          direction-stability threshold (cos); 0 => aligned deltas pass.
+        persist_alpha  EMA factor smoothing the gate across epochs (persistence).
+        amplify        if False, force lam=0 (preserve-only ablation, no gradient amp).
     """
 
     PROPOSAL = 3
     NAME = "P3-CorrectionConsistency"
 
-    def __init__(self, *args, gamma=0.9, corr_q=0.95, persist_alpha=0.9, **kwargs):
-        # Stage 1 isolation: model-gradient gate OFF. Forced (not setdefault) because
-        # run_proposal.py always passes --lam (default 1.0), which would otherwise
-        # re-enable the base placeholder gate and confound the write-back-only test.
-        kwargs["lam"] = 0.0
+    def __init__(self, *args, gamma=0.9, corr_q=0.95, k_d=1.0, k_v=5.0, tau_v=0.0,
+                 persist_alpha=0.9, amplify=True, **kwargs):
+        if not amplify:
+            # preserve-only ablation: isolate the write-back (no model-gradient amp)
+            kwargs["lam"] = 0.0
         kwargs.setdefault("warmup_epochs", 10)
         kwargs.setdefault("correction_init", "zero")
         super().__init__(*args, **kwargs)
         self.gamma = float(gamma)
         self.corr_q = float(corr_q)
+        self.k_d = float(k_d)
+        self.k_v = float(k_v)
+        self.tau_v = float(tau_v)
         self.persist_alpha = float(persist_alpha)
-        self._persist = None       # [T] persistence EMA, carried across epochs
-        self._p3_gate = None       # [T] final-epoch gate, for interpretability
+        self.amplify = bool(amplify)
+        self._persist = None       # [T] gate EMA, carried across epochs
+        self._C_prev = None        # [feats, T] correction at the previous epoch end
+        self._dC_prev = None       # [feats, T] previous epoch-to-epoch delta
+        self._g_prev_t = None      # [T] last computed gate (drives next-epoch amp + interp)
+
+    # ── gradient amplification: map the previous-epoch consistency gate onto the
+    #    per-window wrongness, so scale = 1 + lam*g_win up-weights stable-correction
+    #    windows. confidence = 1 (the consistency IS the signal). ──
+    def _compute_signals(self, window_resid, res_stats, model_input=None, target=None):
+        B = window_resid.shape[0]
+        confidence = torch.ones_like(window_resid)
+        if not self.amplify or self._g_prev_t is None:
+            return torch.zeros_like(window_resid), confidence
+        yb = np.asarray(self._cur_yb_idx).reshape(B, -1)      # [B, pred_len] target steps
+        gwin = self._g_prev_t[yb].mean(axis=1)                # [B] mean gate over the window
+        E_t = torch.as_tensor(gwin, dtype=window_resid.dtype, device=window_resid.device)
+        return E_t.clamp(0.0, 1.0), confidence
 
     def _writeback_scale(self, correction, grad, epoch):
-        # per-timestep correction magnitude (same reduction as the |correction| score)
-        d = correction.detach()[0].abs().mean(dim=0)                  # [T]
-        thr = torch.quantile(d, self.corr_q)
-        indicator = (d > thr).float()                                 # [T] in the top tail this epoch
-        if self._persist is None or self._persist.shape != d.shape:
-            self._persist = torch.zeros_like(d)
-        self._persist = self.persist_alpha * self._persist + (1.0 - self.persist_alpha) * indicator
-        g = self._persist.clamp(0.0, 1.0)                             # [T] consistently-large -> confident
-        self._p3_gate = g.detach().cpu().numpy()
-        # SUPPRESS writes on confident, consistent corrections -> preserve as evidence
-        scale = (1.0 - self.gamma * g).clamp(0.0, 1.0)                # [T]
+        C = correction.detach()[0]                            # [feats, T]
+        d = C.abs().mean(dim=0)                               # [T] magnitude
+        tau_d = torch.quantile(d, self.corr_q)
+        g_corr = torch.sigmoid(self.k_d * (d - tau_d) / (d.std() + _EPS))   # [T]
+
+        # direction stability v_t = cos(dC^e, dC^{e-1}); needs 3 epochs of history
+        if self._C_prev is not None:
+            dC = C - self._C_prev                             # [feats, T]
+        else:
+            dC = torch.zeros_like(C)
+        if self._dC_prev is not None:
+            num = (dC * self._dC_prev).sum(dim=0)             # [T]
+            den = dC.norm(dim=0) * self._dC_prev.norm(dim=0) + _EPS
+            v = num / den                                     # [T] cosine in [-1, 1]
+        else:
+            v = torch.zeros_like(d)
+        g_stab = torch.sigmoid(self.k_v * (v - self.tau_v))   # [T]
+
+        g = (g_corr * g_stab).clamp(0.0, 1.0)                 # [T] docx gate
+        # persistence: EMA-smooth the gate across epochs (consistently confident)
+        if self._persist is None or self._persist.shape != g.shape:
+            self._persist = torch.zeros_like(g)
+        self._persist = self.persist_alpha * self._persist + (1.0 - self.persist_alpha) * g
+        g_use = self._persist.clamp(0.0, 1.0)
+        self._g_prev_t = g_use.detach().cpu().numpy()         # next-epoch amp + interp
+
+        # update epoch history AFTER using the previous deltas
+        self._dC_prev = dC.clone()
+        self._C_prev = C.clone()
+
+        # preserve write-back: suppress writes on confident, consistent corrections
+        scale = (1.0 - self.gamma * g_use).clamp(0.0, 1.0)    # [T]
         return grad * scale.view(1, 1, -1)
 
     def fit(self, data, train_idx=None):
         scores = super().fit(data, train_idx)
-        if self._p3_gate is not None:
-            # report P3's persistence gate (the inherited gate_per_t is ~0 with lam=0)
-            self.gate_per_t = self._p3_gate
+        if self._g_prev_t is not None:
+            # report P3's consistency gate (the inherited per-window gate is the
+            # amplification signal, which is ~0 in the preserve-only ablation)
+            self.gate_per_t = self._g_prev_t
         return scores

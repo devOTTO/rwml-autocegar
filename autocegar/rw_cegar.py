@@ -238,6 +238,10 @@ class CNN_RW_CEGAR(CNN_RW):
                 B = output.shape[0]
                 residual = (target_full - output).detach().view(B, self.feats, self.pred_len)
                 window_resid = res_stats.update(residual)                 # [B]
+                # expose this batch's target timestep indices [B, pred_len] so a
+                # proposal can map a per-timestep signal onto per-window wrongness
+                # (P3's correction-consistency gate). Base/P1/P2 ignore it.
+                self._cur_yb_idx = yb_idx
                 E_t, confidence = self._compute_signals(
                     window_resid, res_stats, x + x_corr, target_full)  # [B], [B]
 
