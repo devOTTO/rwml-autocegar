@@ -62,25 +62,27 @@ def shade_anomalies(ax, label, a, b):
         ax.axvspan(start, t[-1], color="red", alpha=0.12, lw=0)
 
 
-def main():
-    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
-    p.add_argument("--proposal", type=int, default=1)
-    p.add_argument("--dataset", default="gecco", choices=list(DATASETS))
-    p.add_argument("--variant", default="basic")
-    p.add_argument("--epochs", type=int, default=100)
-    p.add_argument("--warmup", type=int, default=10)
-    p.add_argument("--tau", type=float, default=2.0)
-    p.add_argument("--lam", type=float, default=1.0)
-    p.add_argument("--pad", type=int, default=150, help="context padding around the anomaly block")
-    p.add_argument("--wandb", action="store_true", help="also log the figure to wandb")
-    args = p.parse_args()
+def full_timeline(ax, label, a, b):
+    """Whole-series anomaly map (structure) with the zoom window marked."""
+    y = np.asarray(label).astype(int)
+    idx = np.where(y == 1)[0]
+    if len(idx):
+        breaks = np.where(np.diff(idx) > 1)[0]
+        for blk in np.split(idx, breaks + 1):
+            ax.axvspan(blk[0], blk[-1] + 1, color="red", alpha=0.6, lw=0)
+    ax.axvspan(a, b, color="#1f77b4", alpha=0.18, lw=0)   # the zoom window
+    ax.set_xlim(0, len(y))
+    ax.set_yticks([])
+    ax.set_ylabel("all\nanomalies", fontsize=8)
 
-    data, label = load_dataset(args.dataset)
-    print(f"data {data.shape} | anomalies {int(label.sum())}", flush=True)
 
-    model = build_model(args.proposal, variant=args.variant, lam=args.lam, tau=args.tau,
-                        warmup_epochs=args.warmup, window_size=50, feats=data.shape[1],
-                        epochs=args.epochs, batch_size=256, l1_weight=0.001)
+def make_figure(proposal, dataset, variant, epochs, warmup, tau, lam, pad, wandb_log):
+    data, label = load_dataset(dataset)
+    print(f"[{dataset}] data {data.shape} | anomalies {int(label.sum())}", flush=True)
+
+    model = build_model(proposal, variant=variant, lam=lam, tau=tau,
+                        warmup_epochs=warmup, window_size=50, feats=data.shape[1],
+                        epochs=epochs, batch_size=256, l1_weight=0.001)
     scores = model.fit(data)
 
     ts = model._normalize(data).T                 # [feats, T] normalized original
@@ -89,18 +91,21 @@ def main():
     gate = model.gate_per_t
 
     f = int(np.argmax(np.abs(corr).sum(axis=1)))   # most-corrected feature
-    a, b = largest_anomaly_span(label, args.pad)
+    a, b = largest_anomaly_span(label, pad)
     t = np.arange(a, b)
-    print(f"feature {f} (most corrected), window [{a}:{b}]", flush=True)
+    print(f"[{dataset}] feature {f} (most corrected), window [{a}:{b}]", flush=True)
 
-    fig, (ax1, ax2) = plt.subplots(2, 1, sharex=True, figsize=(11, 6),
-                                   gridspec_kw={"height_ratios": [2, 1]})
+    # 3 panels: (0) full-series anomaly structure, (1) orig vs corrected, (2) gate/|corr|
+    fig, (ax0, ax1, ax2) = plt.subplots(3, 1, figsize=(11, 7),
+                                        gridspec_kw={"height_ratios": [0.5, 2, 1]})
+    full_timeline(ax0, label, a, b)
+    ax0.set_title(f"P{proposal}-{variant} on {dataset}: anomaly structure (top) + "
+                  f"correction at the longest block (blue window)")
+
     ax1.plot(t, ts[f, a:b], color="#1f77b4", lw=1.1, label="original x")
     ax1.plot(t, corrected[f, a:b], color="#ff7f0e", lw=1.1, label="corrected x + correction")
     shade_anomalies(ax1, label, a, b)
     ax1.set_ylabel(f"feature {f} (normalized)")
-    ax1.set_title(f"P{args.proposal}-{args.variant} on {args.dataset}: original vs corrected "
-                  f"at anomaly (red span)")
     ax1.legend(loc="upper right", fontsize=9)
 
     ax2.plot(t, gate[a:b], color="#2ca02c", lw=1.1, label="gate activation")
@@ -112,11 +117,12 @@ def main():
     fig.tight_layout()
 
     os.makedirs(FIG_DIR, exist_ok=True)
-    out = os.path.join(FIG_DIR, f"P{args.proposal}_{args.variant}_{args.dataset}_correction_example.png")
+    out = os.path.join(FIG_DIR, f"P{proposal}_{variant}_{dataset}_correction_example.png")
     fig.savefig(out, dpi=140)
-    print(f"saved -> {out}", flush=True)
+    plt.close(fig)
+    print(f"[{dataset}] saved -> {out}", flush=True)
 
-    if args.wandb:
+    if wandb_log:
         try:
             from dotenv import load_dotenv
             load_dotenv(os.path.join(os.path.dirname(FIG_DIR), "..", ".env"))
@@ -126,12 +132,33 @@ def main():
         run = wandb.init(entity=os.environ.get("WANDB_ENTITY") or None,
                          project=os.environ.get("WANDB_PROJECT", "rwml-autocegar"),
                          mode=os.environ.get("WANDB_MODE", "online"),
-                         name=f"P{args.proposal}-{args.variant}-{args.dataset}-example",
-                         group=f"proposal{args.proposal}", job_type="figure",
-                         tags=["figure", f"P{args.proposal}", args.dataset], reinit=True)
+                         name=f"P{proposal}-{variant}-{dataset}-example",
+                         group=f"proposal{proposal}", job_type="figure",
+                         tags=["figure", f"P{proposal}", dataset], reinit=True)
         run.log({"correction_example": wandb.Image(out)})
         run.finish()
-        print("logged figure to wandb", flush=True)
+        print(f"[{dataset}] logged figure to wandb", flush=True)
+    return out
+
+
+def main():
+    p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
+    p.add_argument("--proposal", type=int, default=1)
+    p.add_argument("--dataset", default="gecco", choices=list(DATASETS) + ["all"],
+                   help="one registry key, or 'all' to loop over every tested representative")
+    p.add_argument("--variant", default="basic")
+    p.add_argument("--epochs", type=int, default=100)
+    p.add_argument("--warmup", type=int, default=10)
+    p.add_argument("--tau", type=float, default=2.0)
+    p.add_argument("--lam", type=float, default=1.0)
+    p.add_argument("--pad", type=int, default=150, help="context padding around the anomaly block")
+    p.add_argument("--wandb", action="store_true", help="also log the figure to wandb")
+    args = p.parse_args()
+
+    datasets = list(DATASETS) if args.dataset == "all" else [args.dataset]
+    for ds in datasets:
+        make_figure(args.proposal, ds, args.variant, args.epochs, args.warmup,
+                    args.tau, args.lam, args.pad, args.wandb)
 
 
 if __name__ == "__main__":
