@@ -23,6 +23,11 @@ Per-collection mean over all series; RW-1 / DeepAnT = reproduction per-collectio
 means (reference, best-HP/200ep). Verdict set (opportunity/gecco/creditcard) +
 characterization set (SMAP/SMD/MITDB — domain / anomaly-type diversity).
 
+**Cost** (gecco, 100 epochs, GPU wall-clock; indicative, single no-seed run):
+P1 5:05 (1.0×) · **P2 6:02 (1.19×)** · P3 6:44 (1.32×). P2's overhead is the M=5
+MC-dropout forward passes for the uncertainty signal, and grows with the number of
+features (gecco has 9; a wide series like opportunity/248-feat costs more).
+
 ## Collection-level results
 
 `*` DeepAnT / RW-1 = reproduction per-collection means (reference). Δ = P2 − RW-1.

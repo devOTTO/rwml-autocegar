@@ -24,6 +24,11 @@ the delta is indicative, config not identical to P1's 100ep). `all` verdict set 
 opportunity + gecco + creditcard (gecco & creditcard are n=1, i.e. already whole
 collections; opportunity = mean over its 8 series).
 
+**Cost** (gecco, 100 epochs, GPU wall-clock; indicative, single no-seed run):
+**P1 5:05 (1.0×)** · P2 6:02 (1.19×) · P3 6:44 (1.32×). P1 is the cheapest — one
+forward pass per window, the same as RW-1. (Drivers: P2 = M=5 MC-dropout passes;
+P3 = direction-stability + gradient amplification + preserve write-back.)
+
 ## Collection-level results (primary verdict)
 
 `*` DeepAnT / RW-1 = reproduction per-collection means (reference). Δ = P1 − RW-1.

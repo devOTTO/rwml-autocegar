@@ -27,6 +27,11 @@ Verdict set only (opportunity 8 + gecco 1 + creditcard 1 = 10 series), `epochs=1
 `full@auto-λ` (`lam_mode=auto_tr`, the auto-tuning ablation). auto-τ is N/A (P3 does
 not use the residual τ). Score = mean|correction| (same as RW-1, for a fair delta).
 
+**Cost** (gecco, 100 epochs, GPU wall-clock; indicative, single no-seed run):
+P1 5:05 (1.0×) · P2 6:02 (1.19×) · **P3 6:44 (1.32×)**. P3 is the most expensive of
+the three — the epoch-end direction-stability (cos over [feats,T]) + gradient
+amplification (ScaleGrad, λ>0) + preserve write-back stack on top of the RW-1 step.
+
 ## Collection-level results (primary = `full`)
 
 `*` DeepAnT / RW-1 = reproduction per-collection means (reference). Δ = P3(full) − RW-1.
