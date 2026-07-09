@@ -38,24 +38,37 @@ characterization set (SMAP/SMD/MITDB — domain / anomaly-type diversity).
 
 **P2 beats RW-1 on 0/6 collections.**
 
-## Interpretability — P2 fails differently from P1
-P1's gate *localizes* anomalies and then erases them (GECCO: gate→label AUC ≈ 0.90,
-correction ≈ 5.5× on anomaly windows). **P2's uncertainty-based gate does neither** —
-per-series (id_1) diagnostics:
+## Interpretability — why P2 loses (per-series id_1 diagnostics)
 
-| collection (id_1) | gate→label AUC | corr @anom/norm | trigger frac |
-|---|:-:|:-:|:-:|
-| SMAP | 0.45 | 1.29 | ≈0.00 |
-| MITDB | 0.44 | 1.19 | ≈0.00 |
-| SMD | 0.23 | 1.00 | ≈0.00 |
+| collection (id_1) | gate→label AUC | corr @anom/norm | trigger frac | Δ AUC-PR | regime |
+|---|:-:|:-:|:-:|:-:|---|
+| GECCO | 0.525 | **2.81** | ≈0.00 | −0.434 | P1-style erase (correction concentrates on anomalies) |
+| SMD | 0.23 | 1.00 | ≈0.00 | −0.195 | gate anti-aligned; correction degraded broadly |
+| CreditCard | 0.463 | 0.99 | ≈0.00 | −0.110 | near-neutral gate; fragile RW-1 score collapses |
+| OPPORTUNITY | 0.209 | 0.89 | ≈0.00 | −0.104 | gate anti-aligned with anomalies |
+| SMAP | 0.45 | 1.29 | ≈0.00 | −0.050 | near-neutral |
+| MITDB | 0.44 | 1.19 | ≈0.00 | −0.002 | near-neutral → nearly tied |
 
-Across series the gate→label AUC scatters 0.17–0.78 (≈0.5 / below on average),
-correction concentration is ≈1× (not targeted), and the gate rarely exceeds its
-threshold (`trigger_frac ≈ 0`). So the MC-dropout confidence is near-flat / poorly
-calibrated — the gate is essentially **uninformative**, and P2 degenerates to a
-(slightly worse) perturbed RW-1. This directly confirms the doc's "MC-dropout
-uncertainty may be poorly calibrated" risk. **Different failure from P1**:
-P1 over-targets (erases anomalies); P2's gate is under-informative.
+**Unified reading (not "inert").** The MC-dropout confidence is uniformly weak
+(`trigger_frac ≈ 0` on every series, gate→label AUC > 0.5 on only 17/72), so the
+gate is driven mostly by the residual-wrongness term `e_t = ‖Y−μ‖/√(u+ε)`, noisily.
+The batch-normalized scale still redistributes the correction gradient by the
+*relative* gate, so the outcome depends on the signal type:
+- **Low-uncertainty / smooth signals (GECCO)**: √u is small, `e_t` still fires at
+  anomalies → correction concentrates there (corr@anom/norm 2.8×) → **P1-style
+  erasing → the largest loss (−0.43).** So on the verdict's key collection P2 fails
+  *like P1*, not "inertly".
+- **Noisy / high-uncertainty domains (SMAP, MITDB)**: √u is large, `e_t` is damped →
+  near-neutral gate → smallest losses (−0.05, −0.002). Here the "uninformative gate"
+  reading holds.
+- **OPPORTUNITY / SMD**: the gate anti-aligns with anomalies (AUC 0.21 / 0.23) and
+  the perturbation degrades the correction broadly (SMD AUC-PR 0.233→0.038); the
+  exact mechanism is less clean than the other two.
+
+Net: the uncertainty confidence **never helps** — where residual wrongness still
+fires it mildly erases (like P1), where uncertainty damps it the gate washes out.
+Confirms the doc's "MC-dropout uncertainty may be poorly calibrated" risk.
+(Contrast P1, GECCO: gate→label AUC ≈ 0.90, correction ≈ 5.5× — stronger targeting.)
 
 ## Characterization hypothesis — NOT supported
 Hypothesis (a-priori): P2 helps where anomalies are genuinely uncertain (SMAP
