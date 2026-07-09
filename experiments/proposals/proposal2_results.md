@@ -86,6 +86,20 @@ varies is the *degree* of harm — near-harmless on MITDB, severe on gecco/SMD. 
 uncertainty-standardized residual + inverse-uncertainty confidence does not rescue
 the core RW-CEGAR failure mode (amplifying correction on anomaly windows).
 
+## Auto-tuning ablation (verdict set)
+Turned on Auto-CEGAR's controllers (kept off elsewhere): `lam_mode=auto_tr` (auto-λ)
++ `tau_mode=auto_q_valley` (auto-τ; P2 has a per-window C_t so valley-τ can act).
+
+| collection | fixed AUC-PR | auto-λ/τ AUC-PR | RW-1 | auto beats RW-1? |
+|---|:--:|:--:|:--:|:--:|
+| GECCO | 0.205 | 0.194 | 0.639 | no |
+| OPPORTUNITY | 0.034 | 0.032 | 0.138 | no |
+| CreditCard | 0.002 | 0.002 | 0.111 | no |
+
+**Essentially no change** — consistent with the uninformative gate (auto-τ can't find
+a useful threshold in a near-flat confidence, auto-λ has nothing to amplify). Still
+0/3; auto-tuning does not change the verdict.
+
 ## Decision
 **Fail-fast → Proposal 3 (RW-Correction-Consistency CEGAR).** P2, the cleanest
 theoretical CEGAR analogue, does not beat RW-1 on any collection, and the

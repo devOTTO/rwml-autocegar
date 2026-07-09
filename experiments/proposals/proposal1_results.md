@@ -49,8 +49,27 @@ in `experiments/proposals/plot_correction_example.py` (gecco figure in wandb).
 ## Single-series screen — stages 1–4 (exploratory)
 The earlier **fail-fast single-series** stage screen (one representative series per
 set: opportunity **id_1**, gecco, creditcard). Kept for the record; the collection
-means above are the verdict. Sweeps and auto-tuning were held for the collection
-re-run since the failure is conceptual, not a HP-tuning issue.
+means above are the verdict. Manual sweeps were held for the collection re-run;
+auto-tuning was checked separately (see **Auto-tuning ablation** below).
+
+> Note: gecco appears with two figures — stage-1 (0.4565 / RW-1 0.6671) uses a
+> **100ep co-trained** baseline, the collection table (0.472 / RW-1 0.639) uses the
+> **200ep reproduction** baseline; separate runs (dropout variance), hence the small
+> difference. RW-1@100 (0.667) ≥ RW-1@200 (0.639), so shorter training doesn't
+> inflate the baseline.
+
+## Auto-tuning ablation (verdict set)
+Auto-CEGAR's controllers, kept off elsewhere, turned on: P1 `lam_mode=auto_tr`
+(auto-λ). auto-λ adapts λ toward a tail-ratio target (≤ lam_max=1.5).
+
+| collection | fixed AUC-PR | auto-λ AUC-PR | RW-1 | auto beats RW-1? |
+|---|:--:|:--:|:--:|:--:|
+| GECCO | 0.472 | 0.531 | 0.639 | no |
+| OPPORTUNITY | 0.049 | 0.072 | 0.138 | no |
+| CreditCard | 0.003 | 0.004 | 0.111 | no |
+
+auto-λ improves P1 modestly (it raises λ = stronger gating) but **still 0/3** — it
+narrows the gap on GECCO, never closes it. Auto-tuning does not change the verdict.
 
 ### Stage 1 — default HP vs RW-1 (single series) — Δ = P1 − RW-1
 | dataset | P1 AUC-PR | RW-1 AUC-PR | **Δ AUC-PR** | P1 AUC-ROC |
