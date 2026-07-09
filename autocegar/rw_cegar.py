@@ -153,6 +153,23 @@ class CNN_RW_CEGAR(CNN_RW):
         confidence = torch.full_like(E_t, float(C_t))                 # broadcast -> [B]
         return E_t, confidence
 
+    def _writeback_scale(self, correction, grad, epoch):
+        """Hook: scale the epoch-wise correction gradient before the RW write step.
+
+        Default is identity, so the base / P1 / P2 are unaffected. Proposal 3
+        overrides this to SUPPRESS writes on confident, temporally consistent
+        corrections (``grad * (1 - gamma*g)``), preserving them as anomaly evidence
+        instead of continuing to reshape them away.
+
+        Args:
+            correction: the full correction tensor ``[1, feats, T]`` (current values).
+            grad:       its epoch-wise gradient ``[1, feats, T]`` (already activated).
+            epoch:      current epoch (1-indexed).
+        Returns:
+            the (possibly rescaled) gradient, same shape as ``grad``.
+        """
+        return grad
+
     def fit(self, data, train_idx=None):
         print(f"Training CNN_RW_CEGAR (RW-1 + CEGAR gate) | warmup={self.warmup_epochs} "
               f"| lam_mode={self.lam_mode} | tau_mode={self.tau_mode} "
@@ -263,6 +280,7 @@ class CNN_RW_CEGAR(CNN_RW):
                 l1_loss.backward()
                 if correction.grad is not None:
                     correction.grad = self._grad_activation(correction.grad)
+                    correction.grad = self._writeback_scale(correction, correction.grad, epoch)
                     self.correction_optimizer.step()
 
                 # ── controllers (epoch end); state carried to next epoch ──
