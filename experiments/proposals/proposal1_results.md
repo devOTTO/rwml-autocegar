@@ -46,11 +46,46 @@ score, so AUC-PR drops. Per-series `gate/*` and `corr/*` are on the `interp`/
 `collection`-tagged wandb runs. A Baldo-Fig-6.1-style original-vs-corrected plot is
 in `experiments/proposals/plot_correction_example.py` (gecco figure in wandb).
 
-## Stage sweeps (collection-level) — in progress
-The earlier single-series stage screen is **discarded** in favor of collection-level
-sweeps. τ / λ (and, for P2, τ_u / mc) sweeps are being re-run at the collection
-level; any config that meaningfully changes the verdict will be added here as a
-per-config collection-mean table.
+## Single-series screen — stages 1–4 (exploratory)
+The earlier **fail-fast single-series** stage screen (one representative series per
+set: opportunity **id_1**, gecco, creditcard). Kept for the record; the collection
+means above are the verdict. Sweeps and auto-tuning were held for the collection
+re-run since the failure is conceptual, not a HP-tuning issue.
+
+### Stage 1 — default HP vs RW-1 (single series) — Δ = P1 − RW-1
+| dataset | P1 AUC-PR | RW-1 AUC-PR | **Δ AUC-PR** | P1 AUC-ROC |
+|---|:--:|:--:|:--:|:--:|
+| opportunity (id_1) | 0.0209 | 0.0284 | **−0.0075** | 0.367 |
+| gecco | 0.4565 | 0.6671 | **−0.2105** | 0.922 |
+| creditcard | 0.0032 | 0.1227 | **−0.1195** | 0.595 |
+
+### Stage 2 — τ sweep (opportunity id_1, basic, λ=1)
+| τ | AUC-PR | AUC-ROC |
+|:--:|:--:|:--:|
+| 1.5 | 0.0207 | 0.365 |
+| 2.0 | 0.0209 | 0.367 |
+| 2.5 | 0.0208 | 0.336 |
+| 3.0 | 0.0200 | 0.340 |
+
+τ has essentially no effect; AUC-ROC stays < 0.5.
+
+### Stage 3 — λ sweep (opportunity id_1, basic, τ=2)
+| λ | AUC-PR | AUC-ROC |
+|:--:|:--:|:--:|
+| 0.5 | 0.0202 | 0.332 |
+| 1.0 | 0.0209 | 0.367 |
+| 2.0 | 0.0235 | 0.426 |
+
+Stronger gating (λ↑) helps slightly but stays below RW-1 (0.0284) and AUC-ROC 0.5.
+
+### Stage 4 — selective confidence (single series, τ=2, λ=1)
+| dataset | basic AUC-PR | selective AUC-PR | basic AUC-ROC | selective AUC-ROC |
+|---|:--:|:--:|:--:|:--:|
+| opportunity (id_1) | 0.0209 | 0.0221 | 0.367 | 0.355 |
+| gecco | 0.4565 | 0.4473 | 0.922 | 0.914 |
+| creditcard | 0.0032 | 0.0041 | 0.595 | 0.631 |
+
+Selective ≈ basic — no meaningful improvement.
 
 ## Decision
 **Fail-fast → Proposal 2.** P1 (RW-CEGAR form) does not beat RW-1 on any collection.
