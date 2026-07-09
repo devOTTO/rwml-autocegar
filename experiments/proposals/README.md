@@ -27,7 +27,7 @@ The single-`--dataset` / `all` mode remains for quick one-series screens.
                   the write-up `proposalN_results.md`.
 - Shared (root):  `aggregate_collection.py`, `aggregate_sweep.py`, `label_stats.py`,
                   `plot_correction_example.py`, `log_proposal_summary_to_wandb.py`,
-                  `dataset_anomaly_structure.md`, `figures/`, `auto_grid.txt` +
+                  `dataset_sizes.md` (root, size + anomaly), `figures/`, `auto_grid.txt` +
                   `submit_auto.sh` (P1+P2 auto ablation).
 - Results:        `experiments/proposals/results_pN.csv` (raw, gitignored, written
                   by the runner), wandb project `rwml-autocegar`.
@@ -168,17 +168,18 @@ tested (with epochs/warmup), the delta-vs-RW-1 table, sweep tables, timing
 (`sacct`), interpretation, and the fail-fast decision. Commit the md (numbers are
 embedded, so the gitignored csv is not needed).
 
-## 4b. Dataset anomaly structure (reference)
+## 4b. Dataset reference (size + anomaly structure)
 
-`dataset_anomaly_structure.md` summarises WHERE and in WHAT SHAPE the anomalies
-sit across the **full TSB-AD-M corpus** (all 200 series / 17 collections), classing
-each as **point-like** / **block-like** / **mixed**. This is context for the
-RW-CEGAR 'erase' failure mode (it bites hardest on long, localizable blocks).
-Regenerate with:
+The single dataset reference is **`dataset_sizes.md`** (repo root): size + runtime
+(N / Avg Len / Dim, thesis terms) plus a WHERE/WHAT-SHAPE anomaly section (all 200
+series / 17 collections classed **point-like** / **block-like** / **mixed**, with the
+per-collection density figure). The anomaly section is auto-regenerated between the
+`ANOMALY-STRUCTURE:AUTO` markers; the size/runtime part above them is hand-maintained.
+Regenerate the anomaly section + per-series csv + density figure with:
 
 ```bash
-python experiments/proposals/label_stats.py --all-files   # -> .md + per-series .csv
-python experiments/proposals/label_stats.py --plot        # timeline PNGs (tested sets)
+python experiments/proposals/label_stats.py --all-files   # -> dataset_sizes.md section + .csv + figure
+python experiments/proposals/label_stats.py --plot        # per-dataset timeline PNGs (tested sets)
 ```
 
 ## 5. Fail-fast decision rule
