@@ -149,6 +149,16 @@ def gate_interpretability(scores, gate_per_t, label, thr=0.5):
         out["corr/anom_mean"] = float(s[y].mean())
         out["corr/norm_mean"] = float(s[~y].mean())
         out["corr/anom_over_norm"] = float(s[y].mean() / max(s[~y].mean(), 1e-9))
+        # thesis §8.4 correction diagnostics: high-correction = |correction| above
+        # its 95th percentile (tau_C). Overlap = precision (of high-corr points,
+        # frac that are anomalies); AnomalyCoverage = recall (of anomalies, frac
+        # that are high-corr). Same idea as trigger_precision/recall but on
+        # |correction| instead of the gate — lets us compare P1/P2 to Baldo directly.
+        tau_c = float(np.quantile(s, 0.95))
+        hi = s > tau_c
+        out["corr/tau_c_q95"] = tau_c
+        out["corr/overlap"] = float(y[hi].mean()) if hi.any() else 0.0
+        out["corr/anomaly_coverage"] = float(hi[y].mean())
         out["gate/auc_roc_vs_label"] = float(roc_auc_score(y, g))
         out["gate/auc_pr_vs_label"] = float(average_precision_score(y, g))
     trig = g > thr
