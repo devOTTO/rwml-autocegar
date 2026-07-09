@@ -68,11 +68,14 @@ docx leaves open resolves to "both negligible here".
   does not rescue the score, because plain RW-1 (no gate) already produces the best
   mean|correction| separation on these collections — any CEGAR gating, amplify (P1) or
   preserve (P3), only degrades it.
-- **P3 is actually worse than P1 on GECCO** (0.227 vs 0.486). P1's aggressive gating
-  drove a higher anomaly-vs-normal correction ratio (5.3× vs P3's 2.7×), i.e. a larger
-  score contrast; P3's gentler preserve gives a weaker contrast, so a lower AUC-PR.
-  The "erase is the problem" story is thus incomplete — the score responds to
-  correction *contrast*, and RW-1's ungated contrast is already the strongest.
+- **P3 is actually worse than P1 on GECCO** (0.227 vs P1's 0.486; both < RW-1 0.639).
+  P1's aggressive gating drove a higher anomaly-vs-normal correction ratio (5.3× vs
+  P3's 2.7×). A higher such ratio *coincides* with a higher AUC-PR here, but note
+  AUC-PR is a ranking metric, so this is a suggestive association, not a proven
+  monotonic law. The "erase is the problem" story is thus incomplete: gating the
+  correction (amplify or preserve) does not help, which points to RW-1's ungated
+  correction pattern already being the strongest — see the RW-1 corr@anom/norm row in
+  the §8.4 table for the direct check.
 
 ## Decision
 **Fail-fast → Proposal 4 (Dual-Gate Residual-and-Gradient RW-CEGAR).** P3, the

@@ -70,7 +70,7 @@ means above are the verdict. Manual sweeps were held for the collection re-run;
 auto-tuning was checked separately (see **Auto-tuning ablation** below).
 
 > Note: gecco appears with two figures — stage-1 (0.4565 / RW-1 0.6671) uses a
-> **100ep co-trained** baseline, the collection table (0.472 / RW-1 0.639) uses the
+> **100ep co-trained** baseline, the collection table (0.486 / RW-1 0.639) uses the
 > **200ep reproduction** baseline; separate runs (dropout variance), hence the small
 > difference. RW-1@100 (0.667) ≥ RW-1@200 (0.639), so shorter training doesn't
 > inflate the baseline.
