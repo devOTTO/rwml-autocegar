@@ -173,6 +173,32 @@ def plot_timeline(key, label, blocks, out):
     plt.close(fig)
 
 
+def log_corpus_to_wandb(recs, per_collection):
+    """Log the corpus structure to a wandb reference run (per-series + per-collection
+    tables, plus shape counts). No training; CPU only."""
+    try:
+        from dotenv import load_dotenv
+        load_dotenv(os.path.join(ROOT, ".env"))
+    except Exception:
+        pass
+    import wandb
+    df = pd.DataFrame([{k: v for k, v in r.items() if k != "blocks"} for r in recs])
+    c = per_collection.reset_index()
+    run = wandb.init(entity=os.environ.get("WANDB_ENTITY") or None,
+                     project=os.environ.get("WANDB_PROJECT", "rwml-autocegar"),
+                     mode=os.environ.get("WANDB_MODE", "online"),
+                     name="dataset-anomaly-structure", group="reference",
+                     job_type="dataset-structure",
+                     tags=["reference", "dataset-structure", "corpus"], reinit=True)
+    run.log({"per_series": wandb.Table(dataframe=df),
+             "per_collection": wandb.Table(dataframe=c)})
+    shape_counts = df["shape"].value_counts().to_dict()
+    run.summary.update({"n_series": len(df), "n_collections": len(c),
+                        **{f"shape/{k}": int(v) for k, v in shape_counts.items()}})
+    run.finish()
+    print(f"[wandb] logged corpus structure -> {run.url}")
+
+
 def main():
     p = argparse.ArgumentParser(description=__doc__,
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
@@ -181,6 +207,9 @@ def main():
     p.add_argument("--all-files", action="store_true",
                    help="scan EVERY TSB-AD-M csv on disk and write the corpus doc "
                         "(dataset_anomaly_structure.md/.csv) instead of the registry table")
+    p.add_argument("--wandb", action="store_true",
+                   help="with --all-files, also log the corpus structure to a wandb "
+                        "reference run (per-series + per-collection tables)")
     args = p.parse_args()
 
     if args.all_files:
@@ -188,6 +217,8 @@ def main():
         csv_out, md_out, c = write_corpus_doc(recs)
         print(c.to_string())
         print(f"\n[per-series csv -> {csv_out}]\n[per-collection md -> {md_out}]")
+        if args.wandb:
+            log_corpus_to_wandb(recs, c)
         return
 
     keys = list(DATASETS) if args.dataset == "all" else [args.dataset]
