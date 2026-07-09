@@ -88,17 +88,20 @@ the core RW-CEGAR failure mode (amplifying correction on anomaly windows).
 
 ## Auto-tuning ablation (verdict set)
 Turned on Auto-CEGAR's controllers (kept off elsewhere): `lam_mode=auto_tr` (auto-λ)
-+ `tau_mode=auto_q_valley` (auto-τ; P2 has a per-window C_t so valley-τ can act).
++ `tau_mode=auto_q_valley` (auto-τ).
 
-| collection | fixed AUC-PR | auto-λ/τ AUC-PR | RW-1 | auto beats RW-1? |
-|---|:--:|:--:|:--:|:--:|
-| GECCO | 0.205 | 0.194 | 0.639 | no |
-| OPPORTUNITY | 0.034 | 0.032 | 0.138 | no |
-| CreditCard | 0.002 | 0.002 | 0.111 | no |
+| collection | auto-λ/τ AUC-PR | RW-1 | beats RW-1? |
+|---|:--:|:--:|:--:|
+| GECCO | 0.194 | 0.639 | no |
+| OPPORTUNITY | 0.032 | 0.138 | no |
+| CreditCard | 0.002 | 0.111 | no |
 
-**Essentially no change** — consistent with the uninformative gate (auto-τ can't find
-a useful threshold in a near-flat confidence, auto-λ has nothing to amplify). Still
-0/3; auto-tuning does not change the verdict.
+Still **0/3** (within run-to-run variance of the fixed verdict: GECCO 0.205,
+OPPORTUNITY 0.034, CreditCard 0.002; no fixed seed). Caveats: auto-λ has nothing to
+amplify (the gate is uninformative), and **auto-τ is not a clean test for P2** — the
+valley controller sets τ in raw-residual-quantile units, but P2's wrongness uses the
+dimensionless standardized residual `e_t = ‖Y−μ‖/√(u+ε)`, so the τ it picks is in the
+wrong units. Either way, the verdict is unchanged.
 
 ## Decision
 **Fail-fast → Proposal 3 (RW-Correction-Consistency CEGAR).** P2, the cleanest

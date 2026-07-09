@@ -77,16 +77,18 @@ auto-tuning was checked separately (see **Auto-tuning ablation** below).
 
 ## Auto-tuning ablation (verdict set)
 Auto-CEGAR's controllers, kept off elsewhere, turned on: P1 `lam_mode=auto_tr`
-(auto-λ). auto-λ adapts λ toward a tail-ratio target (≤ lam_max=1.5).
+(auto-λ, adapts λ toward a tail-ratio target, capped at lam_max=1.5).
 
-| collection | fixed AUC-PR | auto-λ AUC-PR | RW-1 | auto beats RW-1? |
-|---|:--:|:--:|:--:|:--:|
-| GECCO | 0.472 | 0.531 | 0.639 | no |
-| OPPORTUNITY | 0.049 | 0.072 | 0.138 | no |
-| CreditCard | 0.003 | 0.004 | 0.111 | no |
+| collection | auto-λ AUC-PR | RW-1 | beats RW-1? |
+|---|:--:|:--:|:--:|
+| GECCO | 0.531 | 0.639 | no |
+| OPPORTUNITY | 0.072 | 0.138 | no |
+| CreditCard | 0.004 | 0.111 | no |
 
-auto-λ improves P1 modestly (it raises λ = stronger gating) but **still 0/3** — it
-narrows the gap on GECCO, never closes it. Auto-tuning does not change the verdict.
+Still **0/3**. The auto-λ figures are within run-to-run variance of the fixed-λ
+verdict above (GECCO 0.486, OPPORTUNITY 0.068, CreditCard 0.004; no fixed seed, so
+these are separate runs), so auto-λ neither clearly helps nor hurts — it does not
+change the verdict.
 
 ### Stage 1 — default HP vs RW-1 (single series) — Δ = P1 − RW-1
 | dataset | P1 AUC-PR | RW-1 AUC-PR | **Δ AUC-PR** | P1 AUC-ROC |
