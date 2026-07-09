@@ -1,4 +1,10 @@
-"""RW-1 + CEGAR — the AutoCEGAR trainer built on the *reproduction-successful*
+"""RW-1 + CEGAR base — DEDICATED COPY for Proposal 3 (kept separate from the
+P1/P2 base ``rw_cegar.py`` on purpose: P3 needs the ``_writeback_scale`` hook and
+the per-window target-index stash, and duplicating the trainer keeps the P1/P2
+base clean and easy to read). Any P1/P2 change to ``rw_cegar.py`` that P3 should
+also get must be mirrored here manually.
+
+RW-1 + CEGAR — the AutoCEGAR trainer built on the *reproduction-successful*
 RW-1 (paper Algorithm 2) rather than the old standalone DeepAnT track.
 
 `CNN_RW_CEGAR` subclasses the reproduced `rw.cnn_rw.CNN_RW` (linear gradient,
@@ -53,7 +59,7 @@ from autocegar.controllers import (
 )
 
 
-class CNN_RW_CEGAR(CNN_RW):
+class CNN_RW_CEGAR_P3Base(CNN_RW):
     """RW-1 with a CEGAR gate steering the correction gradient.
 
     Extra hyperparameters beyond CNN_RW:
@@ -153,8 +159,25 @@ class CNN_RW_CEGAR(CNN_RW):
         confidence = torch.full_like(E_t, float(C_t))                 # broadcast -> [B]
         return E_t, confidence
 
+    def _writeback_scale(self, correction, grad, epoch):
+        """Hook: scale the epoch-wise correction gradient before the RW write step.
+
+        Default is identity, so the base / P1 / P2 are unaffected. Proposal 3
+        overrides this to SUPPRESS writes on confident, temporally consistent
+        corrections (``grad * (1 - gamma*g)``), preserving them as anomaly evidence
+        instead of continuing to reshape them away.
+
+        Args:
+            correction: the full correction tensor ``[1, feats, T]`` (current values).
+            grad:       its epoch-wise gradient ``[1, feats, T]`` (already activated).
+            epoch:      current epoch (1-indexed).
+        Returns:
+            the (possibly rescaled) gradient, same shape as ``grad``.
+        """
+        return grad
+
     def fit(self, data, train_idx=None):
-        print(f"Training CNN_RW_CEGAR (RW-1 + CEGAR gate) | warmup={self.warmup_epochs} "
+        print(f"Training CNN_RW_CEGAR_P3 (RW-1 + correction-consistency) | warmup={self.warmup_epochs} "
               f"| lam_mode={self.lam_mode} | tau_mode={self.tau_mode} "
               f"| correction_init={self.correction_init}...")
         ts = self._normalize(data)
@@ -221,6 +244,10 @@ class CNN_RW_CEGAR(CNN_RW):
                 B = output.shape[0]
                 residual = (target_full - output).detach().view(B, self.feats, self.pred_len)
                 window_resid = res_stats.update(residual)                 # [B]
+                # expose this batch's target timestep indices [B, pred_len] so a
+                # proposal can map a per-timestep signal onto per-window wrongness
+                # (P3's correction-consistency gate). Base/P1/P2 ignore it.
+                self._cur_yb_idx = yb_idx
                 E_t, confidence = self._compute_signals(
                     window_resid, res_stats, x + x_corr, target_full)  # [B], [B]
 
@@ -263,6 +290,7 @@ class CNN_RW_CEGAR(CNN_RW):
                 l1_loss.backward()
                 if correction.grad is not None:
                     correction.grad = self._grad_activation(correction.grad)
+                    correction.grad = self._writeback_scale(correction, correction.grad, epoch)
                     self.correction_optimizer.step()
 
                 # ── controllers (epoch end); state carried to next epoch ──
