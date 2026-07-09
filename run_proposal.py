@@ -317,11 +317,11 @@ def run_one(args, dataset_key):
     if base_pr is not None:
         print(f">> DELTA AUC-PR (proposal - RW1) = {pr - base_pr:+.4f}", flush=True)
 
-    log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=model, extra=extra)
+    log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=model, extra=extra, interp=interp)
     return pr, roc
 
 
-def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=None):
+def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=None, interp=None):
     os.makedirs(RESULTS_DIR, exist_ok=True)
     path = os.path.join(RESULTS_DIR, f"results_p{args.proposal}.csv")
     row = {
@@ -342,6 +342,12 @@ def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=
         "mc_samples": getattr(model, "mc_samples", None),
         "tau_u": getattr(model, "tau_u", None),
         "extra": (";".join(f"{k}={v}" for k, v in extra.items()) if extra else ""),
+        # interpretability (incl. thesis §8.4 Overlap/AnomalyCoverage) so per-series
+        # rows are aggregatable per collection, not only in the wandb summary.
+        "corr_anom_over_norm": round((interp or {}).get("corr/anom_over_norm", float("nan")), 4),
+        "corr_overlap": round((interp or {}).get("corr/overlap", float("nan")), 4),
+        "corr_anomaly_coverage": round((interp or {}).get("corr/anomaly_coverage", float("nan")), 4),
+        "gate_auc_vs_label": round((interp or {}).get("gate/auc_roc_vs_label", float("nan")), 4),
         "window": args.window, "batch": args.batch, "l1_weight": args.l1_weight,
     }
     write_header = not os.path.exists(path)
