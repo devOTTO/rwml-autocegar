@@ -43,6 +43,8 @@ def main():
     df = df[df["variant"].isin(["basic", "mc5"])]
     if "tau_u" in df.columns:
         df = df[pd.to_numeric(df["tau_u"], errors="coerce").fillna(0.0) == 0.0]
+    if "extra" in df.columns:  # exclude sweep/auto rows (they carry --extra)
+        df = df[df["extra"].fillna("") == ""]
 
     g = df.groupby("collection").agg(n=("auc_pr", "size"),
                                      p_pr=("auc_pr", "mean"),
