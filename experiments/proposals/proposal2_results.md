@@ -38,6 +38,25 @@ characterization set (SMAP/SMD/MITDB — domain / anomaly-type diversity).
 
 **P2 beats RW-1 on 0/6 collections.**
 
+## Interpretability — P2 fails differently from P1
+P1's gate *localizes* anomalies and then erases them (GECCO: gate→label AUC ≈ 0.90,
+correction ≈ 5.5× on anomaly windows). **P2's uncertainty-based gate does neither** —
+per-series (id_1) diagnostics:
+
+| collection (id_1) | gate→label AUC | corr @anom/norm | trigger frac |
+|---|:-:|:-:|:-:|
+| SMAP | 0.45 | 1.29 | ≈0.00 |
+| MITDB | 0.44 | 1.19 | ≈0.00 |
+| SMD | 0.23 | 1.00 | ≈0.00 |
+
+Across series the gate→label AUC scatters 0.17–0.78 (≈0.5 / below on average),
+correction concentration is ≈1× (not targeted), and the gate rarely exceeds its
+threshold (`trigger_frac ≈ 0`). So the MC-dropout confidence is near-flat / poorly
+calibrated — the gate is essentially **uninformative**, and P2 degenerates to a
+(slightly worse) perturbed RW-1. This directly confirms the doc's "MC-dropout
+uncertainty may be poorly calibrated" risk. **Different failure from P1**:
+P1 over-targets (erases anomalies); P2's gate is under-informative.
+
 ## Characterization hypothesis — NOT supported
 Hypothesis (a-priori): P2 helps where anomalies are genuinely uncertain (SMAP
 satellite telemetry), is neutral on industrial (SMD), and hurts on periodic signals
