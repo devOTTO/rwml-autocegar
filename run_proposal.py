@@ -71,10 +71,34 @@ RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
 
 
 def load_dataset(key):
-    df = pd.read_csv(os.path.join(DATA_DIR, DATASETS[key])).dropna()
+    # key may be a short registry name (DATASETS) or a raw TSB-AD-M filename,
+    # so a collection's individual series can be run directly for a full-collection
+    # (rather than single-representative) evaluation.
+    fname = DATASETS.get(key, key)
+    path = fname if os.path.isabs(fname) else os.path.join(DATA_DIR, fname)
+    df = pd.read_csv(path).dropna()
     data = df.iloc[:, :-1].values.astype(float)
     label = df["Label"].astype(int).to_numpy()
     return data, label
+
+
+def collection_of(key):
+    """Collection name for a registry key or a raw 'NNN_COLLECTION_id_...' filename."""
+    fname = DATASETS.get(key, key)
+    parts = fname.split("_")
+    if len(parts) >= 2 and parts[0].isdigit():
+        return parts[1]            # e.g. 144_SMAP_id_1_... -> SMAP
+    return key
+
+
+def series_label(key):
+    """Short label for run names/CSV: registry key, or 'collection_idN' for a raw file."""
+    if key in DATASETS:
+        return key
+    parts = DATASETS.get(key, key).split("_")
+    if len(parts) >= 4 and parts[2] == "id":
+        return f"{parts[1].lower()}_id{parts[3]}"   # 144_SMAP_id_1_... -> smap_id1
+    return parts[1].lower() if len(parts) >= 2 else key
 
 
 def evaluate(scores, label):
@@ -176,26 +200,29 @@ def fit_with_wandb(model, data, run_name, group, tags, config, enabled):
 
 
 def run_one(args, dataset_key):
-    print(f"\n{'='*70}\n[proposal {args.proposal} / {args.variant}] dataset={dataset_key}\n{'='*70}", flush=True)
+    ds = series_label(dataset_key)          # short label (registry key or collection_idN)
+    coll = collection_of(dataset_key)
+    print(f"\n{'='*70}\n[proposal {args.proposal} / {args.variant}] dataset={ds} (collection={coll})\n{'='*70}", flush=True)
     data, label = load_dataset(dataset_key)
     print(f"data {data.shape} | anomalies {int(label.sum())} ({label.mean()*100:.2f}%)", flush=True)
 
     common = dict(window_size=args.window, feats=data.shape[1], epochs=args.epochs,
                   batch_size=args.batch, l1_weight=args.l1_weight)
     wb = wandb_enabled(args)
-    shared_cfg = dict(dataset=dataset_key, dataset_file=DATASETS[dataset_key],
+    shared_cfg = dict(dataset=ds, collection=coll,
+                      dataset_file=DATASETS.get(dataset_key, dataset_key),
                       n_anomalies=int(label.sum()), anomaly_frac=float(label.mean()),
                       **common)
 
     # ── baseline RW-1 first (own wandb run) so we have its AUC for the delta ──
     base_pr = base_roc = None
     if args.baseline:
-        print(f"\n-- baseline RW-1 (plain) on {dataset_key} --", flush=True)
+        print(f"\n-- baseline RW-1 (plain) on {ds} --", flush=True)
         base = CNN_RW(**common)
         brun, bscores = fit_with_wandb(
-            base, data, run_name=f"RW1-baseline-{dataset_key}-ep{args.epochs}",
+            base, data, run_name=f"RW1-baseline-{ds}-ep{args.epochs}",
             group=f"proposal{args.proposal}",
-            tags=["baseline", "RW-1", dataset_key, f"ep{args.epochs}"] + list(args.tag),
+            tags=["baseline", "RW-1", coll, f"ep{args.epochs}"] + list(args.tag),
             config={**shared_cfg, "model": "RW-1", "score": "mean|correction|",
                     "tags": list(args.tag)}, enabled=wb)
         base_pr, base_roc = evaluate(bscores, label)
@@ -222,13 +249,13 @@ def run_one(args, dataset_key):
     extra_suffix = ("-" + "_".join(f"{k}{v}" for k, v in extra.items())) if extra else ""
     prun, scores = fit_with_wandb(
         model, data,
-        run_name=f"P{args.proposal}-{args.variant}-{dataset_key}-ep{args.epochs}-t{args.tau}-l{args.lam}{extra_suffix}",
+        run_name=f"P{args.proposal}-{args.variant}-{ds}-ep{args.epochs}-t{args.tau}-l{args.lam}{extra_suffix}",
         group=f"proposal{args.proposal}",
-        tags=[f"P{args.proposal}", args.variant, dataset_key,
+        tags=[f"P{args.proposal}", args.variant, coll,
               f"tau{args.tau}", f"lam{args.lam}", f"ep{args.epochs}"] + list(args.tag),
         config={**prop_cfg, **extra, "tags": list(args.tag)}, enabled=wb)
     pr, roc = evaluate(scores, label)
-    print(f"\n>> P{args.proposal}-{args.variant} {dataset_key}: AUC-PR={pr:.4f} AUC-ROC={roc:.4f}", flush=True)
+    print(f"\n>> P{args.proposal}-{args.variant} {ds}: AUC-PR={pr:.4f} AUC-ROC={roc:.4f}", flush=True)
 
     # ── interpretability: did the gate fire at anomalies / correction concentrate there? ──
     interp = {}
@@ -262,7 +289,8 @@ def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "proposal": args.proposal,
         "variant": args.variant,
-        "dataset": dataset_key,
+        "dataset": series_label(dataset_key),
+        "collection": collection_of(dataset_key),
         "auc_pr": round(float(pr), 4),
         "auc_roc": round(float(roc), 4),
         "rw1_auc_pr": None if base_pr is None else round(float(base_pr), 4),
@@ -291,10 +319,10 @@ def main():
                                 formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--proposal", type=int, default=1, choices=sorted(PROPOSALS))
     p.add_argument("--dataset", default="all",
-                   choices=list(DATASETS) + ["all"],
-                   help="one of the selected datasets, or 'all' (opportunity,gecco,creditcard)")
+                   help="a registry key (opportunity/gecco/...), 'all' (=verdict set), "
+                        "or a raw TSB-AD-M series filename for full-collection runs")
     p.add_argument("--variant", default=None,
-                   help="proposal variant (P1: basic|selective). Default = proposal's default.")
+                   help="proposal variant (P1: basic|selective; P2: mc5|mc10). Default = proposal's default.")
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--warmup", type=int, default=10, help="forecaster-only warm-up epochs (week-8: 10-15)")
     p.add_argument("--lam", type=float, default=1.0)
