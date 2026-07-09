@@ -8,8 +8,15 @@ the RW-1 baseline on all three it graduates to a full run; otherwise we move on 
 the next proposal.
 
 **Implemented:** P1 (Residual-Gated, variants `basic`/`selective`) and P2
-(Uncertainty-Aware, MC-dropout, variants `mc5`/`mc10`). P3–P5 are reserved slots
-in the registry. P1 verdict: lost to RW-1 on all 3 → see `proposal1_results.md`.
+(Uncertainty-Aware, MC-dropout, variants `mc5`/`mc10`). P3–P5 are reserved slots.
+**Both lost to RW-1 at the collection level** (P1 0/3, P2 0/6) → see
+`proposal1_results.md`, `proposal2_results.md`. Next: P3.
+
+**Evaluation unit = whole collection.** `--dataset` accepts a raw TSB-AD-M series
+filename, so `submit_pN_coll.sh` runs one array task per series and
+`aggregate_collection.py --proposal N` averages them to per-collection means and
+compares against the reproduction RW-1 / DeepAnT per-collection means (reference).
+The single-`--dataset` / `all` mode remains for quick one-series screens.
 
 - Model code:     `autocegar/proposals/proposalN.py` (+ registry in `__init__.py`)
 - Runner:         `run_proposal.py` (repo root)

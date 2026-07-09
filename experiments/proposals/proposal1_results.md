@@ -1,181 +1,65 @@
-# Proposal 1 — Residual-Gated RW-CEGAR: Fail-Fast Results
+# Proposal 1 — Residual-Gated RW-CEGAR: Results
 
-**Date:** 2026-07-05 · **Slurm array:** `41945419` (11 tasks, GPU-shared, v100-32) ·
-**wandb:** project `rwml-autocegar`, group `proposal1`
+**Verdict: P1 loses to the RW-1 baseline on all evaluated collections → fail-fast to Proposal 2.**
 
 ## What Proposal 1 is
-
-The simplest CEGAR × RW-ML hybrid from the research proposal. Built on the
-reproduced RW-1 (Algorithm 2) substrate; it overrides only the wrongness /
-confidence signals:
-
+Simplest CEGAR × RW-ML hybrid, built on the reproduced RW-1 (Algorithm 2). It
+overrides only the wrongness / confidence signals:
 - **Wrongness** `E_t = sigmoid(k·(robust_z − τ))`, `robust_z = (r − median)/MAD`
-- **Confidence** `C_t` — this is the only thing the **variant** switches:
-  - **`basic`**: `C_t = 1` — always confident. The gate is driven purely by
-    wrongness (residual). This is the docx's basic version.
-  - **`selective`**: `C_t = sigmoid(k·(r − Q_q(r))/MAD)` — confident only when the
-    residual is in the distribution's upper tail (`Q_q`, q=0.95 by default), so a
-    window must be *both* high-residual *and* in the tail to be gated.
-- **Gate** `g = E_t·C_t`, **scale** `s = (1 + λg)/mean(1 + λg)` (batch-normalized)
-- `s` scales the per-window forecasting-loss **gradient** via `ScaleGrad`
-  (identity forward → reported loss stays true RMSE).
+- **Confidence** `C_t = 1` (basic) or `sigmoid(k·(r − Q_q(r))/MAD)` (selective) — the
+  variant only switches C_t; τ and λ are variant-independent.
+- **Gate** `g = E_t·C_t`, **scale** `s = (1+λg)/mean(1+λg)`, applied to the
+  per-window forecasting-loss **gradient** via `ScaleGrad` (loss value unchanged).
 - Anomaly score = `mean|correction|` (same as RW-1, for a fair delta).
 
-**τ and λ are independent of the variant.** `τ` (robust-z threshold) and `λ` (gate
-strength) apply to both `basic` and `selective`. So stages 1–3 all use `basic`
-(`C_t = 1`) and only vary τ or λ; stage 4 switches to `selective` while keeping
-τ=2, λ=1 fixed — i.e. it isolates the effect of the confidence term alone.
+## Methodology (collection-level)
+Fixed config: `epochs=100`, `warmup=10`, `window=50`, `batch=256`, `l1_weight=0.001`,
+`activation=linear`, fixed HP (`lam=1, tau=2, k=1`), auto-tuning off.
 
-## Fixed configuration (kept at RW-1 reproduction values)
+**Unit = whole collection.** Each series in a collection is run and averaged to a
+per-collection mean AUC-PR/ROC. **Baseline** RW-1 (and DeepAnT reference) are the
+**reproduction per-collection means** (`rw/reproduction/summary_rw1_besthp.csv`,
+`deepant/reproduction/summary_per_dataset.csv`; best-HP / 200ep / TSB-AD eval — so
+the delta is indicative, config not identical to P1's 100ep). `all` verdict set =
+opportunity + gecco + creditcard (gecco & creditcard are n=1, i.e. already whole
+collections; opportunity = mean over its 8 series).
 
-`epochs=100`, `warmup_epochs=10` (forecaster-only, then correction+gate turn on),
-`window=50`, `batch=256`, `l1_weight=0.001`, `activation=linear`, `lr=0.0008`,
-`correction_rate=0.1`, `correction_init=zero`, `lam_mode/tau_mode=fixed`,
-`scale_normalize=True`. Warm-up was verified active in the logs (epochs 1–10 show
-`L1=0, gate=0`; correction/gate engage from epoch 11).
+## Collection-level results (primary verdict)
 
-## Datasets (week-8 selection: topically disconnected, span the RW-vs-DeepAnT range)
+`*` DeepAnT / RW-1 = reproduction per-collection means (reference). Δ = P1 − RW-1.
 
-| key | dataset | domain |
-|---|---|---|
-| opportunity | 129_OPPORTUNITY_id_1_HumanActivity | activity recognition (DeepAnT-favored) |
-| gecco | 173_GECCO_id_1_Sensor | water quality (RW-strong) |
-| creditcard | 137_CreditCard_id_1_Finance | finance (middle, headroom) |
+| collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P1 AUC-PR | **Δ (P1−RW-1)** | P1 AUC-ROC |
+|---|:-:|:--:|:--:|:--:|:--:|:--:|
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.063 | **−0.075** | 0.419 |
+| GECCO | 1 | 0.454 | 0.639 | 0.472 | **−0.167** | 0.920 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.003 | **−0.108** | 0.610 |
 
-## What was tested
+**P1 beats RW-1 on 0/3 collections.** The opportunity collection mean (8 series)
+confirms the earlier single-series screen — P1 does not recover at collection level.
+DeepAnT is strongest on opportunity/creditcard, RW-1 on gecco; P1 is never best.
 
-All stages share `epochs=100`, `warmup=10`, `window=50`, `batch=256`,
-`l1_weight=0.001` (see Fixed configuration above). Only the `vary` column changes
-per stage; every other hyperparameter is held at the stage-1 values (basic, τ=2,
-λ=1).
+## Interpretability (why it fails)
+Matches the risk the proposal flagged: the gate correctly localizes anomalies
+(gate→label AUC ≈ 0.90 on gecco) and pours correction into them (gecco
+corr@anom/norm ≈ 5.5×), which "erases" the anomalies from the `mean|correction|`
+score, so AUC-PR drops. Per-series `gate/*` and `corr/*` are on the `interp`/
+`collection`-tagged wandb runs. A Baldo-Fig-6.1-style original-vs-corrected plot is
+in `experiments/proposals/plot_correction_example.py` (gecco figure in wandb).
 
-| stage | tag | vary | datasets | epochs | warmup | baseline |
-|---|---|---|---|:--:|:--:|---|
-| 1 | `stage1` | — (basic, τ=2, λ=1) | all 3 | 100 | 10 | RW-1 |
-| 2 | `stage2-tau` | τ ∈ {1.5, 2.5, 3.0} | opportunity | 100 | 10 | — |
-| 3 | `stage3-lam` | λ ∈ {0.5, 2.0} | opportunity | 100 | 10 | — |
-| 4 | `stage4-sel` | variant=selective | all 3 | 100 | 10 | — |
-
-> **Why sweeps (stage 2–3) used opportunity only:** fail-fast economy (fewest,
-> fastest runs). In hindsight gecco would have been a better sensitivity probe —
-> opportunity was the noisiest / weakest dataset for P1 (AUC-ROC ≈ 0.34, near
-> random), so its HP sweep carries little signal. The overall verdict is
-> unaffected (default HP loses on all 3; opportunity sweeps did not recover it).
-
-## Results
-
-### Stage 1 — P1 (basic, default HP) vs RW-1 baseline
-
-Primary metric AUC-PR. **Δ = P1 − RW-1.** DeepAnT added as a reference (see note).
-
-| dataset | DeepAnT AUC-PR* | RW-1 AUC-PR | P1 AUC-PR | **Δ (P1−RW-1)** | P1 AUC-ROC |
-|---|:--:|:--:|:--:|:--:|:--:|
-| opportunity | 0.1995 | 0.0284 | 0.0209 | **−0.0075** | 0.367 |
-| gecco | 0.4545 | 0.6671 | 0.4565 | **−0.2105** | 0.922 |
-| creditcard | 0.1472 | 0.1227 | 0.0032 | **−0.1195** | 0.595 |
-
-> \* **DeepAnT** = standalone reproduction (`deepant/reproduction/summary_per_dataset.csv`):
-> 200 epochs, TSB-AD eval pipeline, **residual-based** score. RW-1 and P1 here are
-> fresh 100-epoch `run_proposal.py` runs with the **`|correction|`** score. So the
-> DeepAnT column is an approximate reference (different epochs / eval / score
-> source), not a strictly controlled comparison.
-
-**P1 is worse than RW-1 on all three datasets**, and heavily so on gecco (where
-RW-1 was strongest) and creditcard. With DeepAnT in view the picture matches
-Baldo's finding and the week-8 dataset rationale: **DeepAnT is strongest on
-opportunity (0.20 vs ~0.02) and creditcard (0.15 vs 0.12); RW-1 is strongest on
-gecco (0.67).** P1 is never the best — it collapses RW-1's gecco advantage down to
-DeepAnT's level and craters on creditcard.
-
-### Stage 2 — τ sweep (opportunity, basic, λ=1)
-
-| τ | AUC-PR | AUC-ROC |
-|:--:|:--:|:--:|
-| 1.5 | 0.0207 | 0.365 |
-| 2.0 | 0.0209 | 0.367 |
-| 2.5 | 0.0208 | 0.336 |
-| 3.0 | 0.0200 | 0.340 |
-
-τ has essentially no effect; AUC-ROC stays < 0.5.
-
-### Stage 3 — λ sweep (opportunity, basic, τ=2)
-
-| λ | AUC-PR | AUC-ROC |
-|:--:|:--:|:--:|
-| 0.5 | 0.0202 | 0.332 |
-| 1.0 | 0.0209 | 0.367 |
-| 2.0 | 0.0235 | 0.426 |
-
-Stronger gating (λ↑) helps slightly on opportunity but still stays below RW-1
-(0.0284) and below AUC-ROC 0.5.
-
-### Stage 4 — selective confidence (τ=2, λ=1)
-
-| dataset | basic AUC-PR | selective AUC-PR | basic AUC-ROC | selective AUC-ROC |
-|---|:--:|:--:|:--:|:--:|
-| opportunity | 0.0209 | 0.0221 | 0.367 | 0.355 |
-| gecco | 0.4565 | 0.4473 | 0.922 | 0.914 |
-| creditcard | 0.0032 | 0.0041 | 0.595 | 0.631 |
-
-Selective ≈ basic (marginally worse on gecco, marginally better on creditcard).
-No meaningful improvement.
-
-## Timing (slurm array 41945419, 1× v100-32, %6 concurrency)
-
-- **Total wall-clock (11 tasks, 6 in parallel): ≈ 24 min.**
-- **Total compute (sum of tasks): ≈ 79 min ≈ 1.3 GPU-h.**
-- Per task (`Elapsed` from `sacct`). Stage-1 tasks run **two** models (P1 + RW-1
-  baseline); all others run one. Each task carries ~3 min fixed overhead
-  (venv + data load + wandb init).
-
-| task | stage | what it ran | elapsed |
-|:--:|:--:|---|:--:|
-| 1 | 1 | opportunity: P1-basic **+ RW-1 baseline** | 5:03 |
-| 2 | 1 | gecco: P1-basic **+ RW-1 baseline** | 9:19 |
-| 3 | 1 | creditcard: P1-basic **+ RW-1 baseline** | 18:19 |
-| 4 | 2 | opportunity τ=1.5 | 4:13 |
-| 5 | 2 | opportunity τ=2.5 | 4:13 |
-| 6 | 2 | opportunity τ=3.0 | 4:13 |
-| 7 | 3 | opportunity λ=0.5 | 4:12 |
-| 8 | 3 | opportunity λ=2.0 | 4:12 |
-| 9 | 4 | opportunity selective | 4:12 |
-| 10 | 4 | gecco selective | 6:11 |
-| 11 | 4 | creditcard selective | 14:50 |
-
-Rough single-model cost (net of ~3 min overhead): opportunity ~1 min, gecco
-~3 min, creditcard ~8–12 min per 100-epoch run — consistent with sequence length
-being the driver (see `dataset_sizes.md`).
-
-## Interpretation
-
-The negative result matches the risk the proposal explicitly flagged for
-Proposal 1: **high residual is also anomaly evidence.** The CEGAR gate amplifies
-the correction gradient on high-residual (anomaly-candidate) windows, so the RW
-correction learns to "absorb" the anomalies. That shrinks `|correction|` exactly
-where anomalies are, degrading the correction-based anomaly score. gecco — where
-RW-1 had the most signal to lose — drops the most, consistent with this
-mechanism. The gate itself worked as intended (`gate ≈ 0.22` in the main phase);
-this is a conceptual outcome, not a bug.
-
-**Scope caveat.** This tests the *RW-correction* reading of Proposal 1 (gate →
-correction, score = `|correction|`), which is what the RW×CEGAR project targets.
-The proposal's headline §1.2 phrasing (amplify model gradient, score by residual)
-was not tested, but with RW fully active the residual score is largely entangled
-with the correction (the model fits corrected data), so it is unlikely to change
-the verdict without weakening RW — which would leave the RW×CEGAR premise.
+## Single-series exploratory sweeps (not re-run at collection level)
+Earlier τ∈{1.5,2.5,3} and λ∈{0.5,2} sweeps and the `selective` variant were run on
+opportunity id_1 only (fail-fast screen). All stayed ≈0.02 AUC-PR / <0.5 ROC and did
+not recover P1; sweeps/auto-tuning were held for the collection re-run since the
+failure is conceptual, not a HP-tuning issue.
 
 ## Decision
-
-**Fail-fast: move on to Proposal 2 (Uncertainty-Aware Residual CEGAR).** Proposal 1
-in its RW-CEGAR form does not beat the RW-1 baseline on any selected dataset.
+**Fail-fast → Proposal 2.** P1 (RW-CEGAR form) does not beat RW-1 on any collection.
 
 ## Reproduce
-
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
-sbatch experiments/proposals/submit_p1_grid.sh      # 11-task array
-# raw per-run rows: experiments/proposals/results_p1.csv
-# sync offline wandb runs to the online project:
-wandb sync --include-offline ./wandb/offline-run-*
+sbatch experiments/proposals/submit_p1_coll.sh       # collection-level, per-series array
+python experiments/proposals/aggregate_collection.py --proposal 1   # -> collection table
+wandb sync --include-offline ./wandb/offline-run-<date>_*
 ```
