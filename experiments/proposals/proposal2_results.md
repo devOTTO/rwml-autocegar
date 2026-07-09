@@ -42,32 +42,32 @@ characterization set (SMAP/SMD/MITDB — domain / anomaly-type diversity).
 
 | collection (id_1) | gate→label AUC | corr @anom/norm | trigger frac | Δ AUC-PR | regime |
 |---|:-:|:-:|:-:|:-:|---|
-| GECCO | 0.525 | **2.81** | ≈0.00 | −0.434 | P1-style erase (correction concentrates on anomalies) |
+| GECCO | 0.525 | **2.81** | ≈0.00 | −0.434 | most correction concentration, but near-random gate (0.53) so concentration is likely RW-1-native, not gate-driven |
 | SMD | 0.23 | 1.00 | ≈0.00 | −0.195 | gate anti-aligned; correction degraded broadly |
 | CreditCard | 0.463 | 0.99 | ≈0.00 | −0.110 | near-neutral gate; fragile RW-1 score collapses |
 | OPPORTUNITY | 0.209 | 0.89 | ≈0.00 | −0.104 | gate anti-aligned with anomalies |
 | SMAP | 0.45 | 1.29 | ≈0.00 | −0.050 | near-neutral |
 | MITDB | 0.44 | 1.19 | ≈0.00 | −0.002 | near-neutral → nearly tied |
 
-**Reading (deliberately conservative).** P2's gate is **uninformative across the
-board** — gate→label AUC 0.21–0.53 (GECCO *included*, 0.525 vs P1's 0.90) and
-`trigger_frac ≈ 0` on every series; correction concentration is ≈1× everywhere
-**except GECCO (2.8×)**. Two things stop us from claiming a per-domain mechanism:
-1. **GECCO's 2.8× is probably RW-1's *native* behavior, not the gate.** With a
-   near-random gate (AUC 0.525), the concentration is most likely plain RW-1 growing
-   |correction| where residuals are high (= anomalies) — *not* gate-induced "P1-style
-   erasing" (P1 had a genuinely anomaly-aligned gate at AUC 0.90). A matched RW-1's
-   corr@anom/norm will confirm whether ~2.8× is native.
-2. **Loss magnitudes are confounded by the baseline.** The reference RW-1 is
-   best-HP/200ep vs our fixed-HP/100ep, so per-domain Δ magnitudes aren't cleanly
-   attributable to a P2 mechanism. A matched 100ep/fixed-HP RW-1 is running to
-   separate mechanism from training budget.
+**Reading.** The MC-dropout confidence is uniformly weak: trigger_frac ≈ 0 on every
+series, and gate→label AUC exceeds 0.5 on only 17/72 series (even GECCO's 0.53 is
+barely above random, versus P1's 0.90). So P2's gate does not localize anomalies on
+any collection, and the per-collection losses are not attributable to a P1-style,
+gate-driven erase.
+- GECCO has the most correction concentration (corr@anom/norm 2.8×), but with a
+  near-random gate (AUC 0.53) this most likely reflects RW-1's native residual-driven
+  correction growth, not gate-induced targeting. Confirming it would need RW-1's own
+  corr@anom/norm, which we did not measure.
+- SMAP / MITDB: near-neutral gate, smallest losses (−0.05, −0.002).
+- OPPORTUNITY / SMD: the gate anti-aligns with anomalies (AUC 0.21 / 0.23) and P2
+  degrades the correction broadly; the mechanism is unclear.
 
-What **is** unambiguous: the MC-dropout confidence never yields a useful gate (it
-neither localizes anomalies nor activates), consistent with the doc's "MC-dropout
-uncertainty may be poorly calibrated" risk — and **P2 never beats RW-1**. (P1, by
-contrast, had a strongly anomaly-aligned gate — AUC ≈ 0.90, correction ≈ 5.5× — so
-P1 and P2 fail for genuinely different reasons.)
+Net: the uncertainty confidence never helps. Because the reference RW-1 is
+best-HP/200ep while P2 is fixed-HP/100ep, the exact loss magnitudes are indicative
+rather than mechanism-attributable; on GECCO the co-trained RW-1@100 (≈0.674) is not
+below the reproduction RW-1@200 (0.639), so the epoch gap does not inflate the
+baseline. This confirms the doc's MC-dropout-miscalibration risk. (Contrast P1 on
+GECCO: gate→label AUC ≈ 0.90, correction ≈ 5.5×, genuinely stronger targeting.)
 
 ## Characterization hypothesis — NOT supported
 Hypothesis (a-priori): P2 helps where anomalies are genuinely uncertain (SMAP
