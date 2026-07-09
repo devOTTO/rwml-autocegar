@@ -214,6 +214,35 @@ def run_one(args, dataset_key):
                       n_anomalies=int(label.sum()), anomaly_frac=float(label.mean()),
                       **common)
 
+    # ── matched RW-1-only mode: de-confound deltas from the reproduction baseline ──
+    if getattr(args, "baseline_only", False):
+        base = CNN_RW(**common)
+        brun, bscores = fit_with_wandb(
+            base, data, run_name=f"RW1m-{ds}-ep{args.epochs}",
+            group=f"proposal{args.proposal}",
+            tags=["rw1-matched", "RW-1", coll, f"ep{args.epochs}"] + list(args.tag),
+            config={**shared_cfg, "model": "RW-1-matched"}, enabled=wb)
+        pr, roc = evaluate(bscores, label)
+        nn = min(len(bscores), len(label))
+        s = np.asarray(bscores[:nn], float); y = np.asarray(label[:nn], int).astype(bool)
+        corr_ratio = float(s[y].mean() / max(s[~y].mean(), 1e-9)) if y.any() and (~y).any() else float("nan")
+        print(f">> RW1-matched {ds}: AUC-PR={pr:.4f} AUC-ROC={roc:.4f} corr@anom/norm={corr_ratio:.2f}", flush=True)
+        if brun is not None:
+            brun.summary.update({"auc_pr": pr, "auc_roc": roc, "corr/anom_over_norm": corr_ratio})
+            brun.finish()
+        os.makedirs(RESULTS_DIR, exist_ok=True)
+        path = os.path.join(RESULTS_DIR, "results_rw1matched.csv")
+        row = {"dataset": ds, "collection": coll, "auc_pr": round(pr, 4), "auc_roc": round(roc, 4),
+               "corr_anom_over_norm": round(corr_ratio, 4), "epochs": args.epochs}
+        wh = not os.path.exists(path)
+        with open(path, "a", newline="") as f:
+            w = csv.DictWriter(f, fieldnames=list(row))
+            if wh:
+                w.writeheader()
+            w.writerow(row)
+        print(f"[rw1-matched logged -> {path}]", flush=True)
+        return pr, roc
+
     # ── baseline RW-1 first (own wandb run) so we have its AUC for the delta ──
     base_pr = base_roc = None
     if args.baseline:
@@ -332,6 +361,9 @@ def main():
     p.add_argument("--batch", type=int, default=256)
     p.add_argument("--l1_weight", type=float, default=0.001)
     p.add_argument("--baseline", action="store_true", help="also run plain RW-1 for the delta")
+    p.add_argument("--baseline-only", dest="baseline_only", action="store_true",
+                   help="run ONLY a matched RW-1 (same epochs/HP) on the series, log AUC + "
+                        "corr@anom/norm to results_rw1matched.csv (de-confounds P1/P2 deltas)")
     p.add_argument("--no-wandb", action="store_true",
                    help="disable wandb logging (default: on if WANDB_ENABLED!=0)")
     p.add_argument("--tag", action="append", default=[],
