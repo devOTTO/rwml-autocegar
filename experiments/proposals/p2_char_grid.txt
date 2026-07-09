@@ -1,0 +1,3 @@
+--proposal 2 --dataset smap --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag char --tag interp
+--proposal 2 --dataset smd --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag char --tag interp
+--proposal 2 --dataset mitdb --variant mc5 --tau 2.0 --lam 1.0 --epochs 100 --warmup 10 --baseline --tag char --tag interp

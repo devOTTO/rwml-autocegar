@@ -53,11 +53,18 @@ DATA_DIR = "/ocean/projects/cis260190p/yhwang2/data/TSB-AD-M/TSB-AD-M/"
 # The three datasets selected in the week-8 meeting (topically disconnected,
 # spanning the RW-vs-DeepAnT delta). opportunity id_1 is the canonical, fast one.
 DATASETS = {
+    # fail-fast verdict set (week-8 pick: feature-count + length axes, RW-vs-DeepAnT gap)
     "opportunity": "129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv",
     "gecco":       "173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv",
     "creditcard":  "137_CreditCard_id_1_Finance_tr_500_1st_541.csv",
+    # characterization set (domain / anomaly-type diversity — NOT part of the
+    # pass/fail verdict; used to map when/why a proposal helps). Added for P2,
+    # whose success hinges on the "confident-error vs high-uncertainty" axis.
+    "smap":  "144_SMAP_id_1_Sensor_tr_2052_1st_5300.csv",       # satellite telemetry (point anomalies)
+    "smd":   "057_SMD_id_1_Facility_tr_4529_1st_4629.csv",      # industrial server (neutral)
+    "mitdb": "019_MITDB_id_1_Medical_tr_37500_1st_103211.csv",  # ECG arrhythmia (periodic -> gecco-like control)
 }
-SELECTED = ["opportunity", "gecco", "creditcard"]  # 'all' runs these in order
+SELECTED = ["opportunity", "gecco", "creditcard"]  # 'all' runs the verdict set only
 
 RESULTS_DIR = os.path.join(os.path.dirname(os.path.abspath(__file__)),
                            "experiments", "proposals")
