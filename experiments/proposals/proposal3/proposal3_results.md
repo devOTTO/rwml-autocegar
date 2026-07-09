@@ -78,9 +78,11 @@ docx leaves open resolves to "both negligible here".
   P3's 2.7×). A higher such ratio *coincides* with a higher AUC-PR here, but note
   AUC-PR is a ranking metric, so this is a suggestive association, not a proven
   monotonic law. The "erase is the problem" story is thus incomplete: gating the
-  correction (amplify or preserve) does not help, which points to RW-1's ungated
-  correction pattern already being the strongest — see the RW-1 corr@anom/norm row in
-  the §8.4 table for the direct check.
+  correction (amplify or preserve) does not beat the best-HP RW-1 reproduction (the
+  documented baseline, `rw/reproduction/summary_rw1_besthp.csv`). This suggests RW-1's
+  ungated correction pattern is already near-optimal on these collections, but we did
+  not measure the reproduction RW-1's own corr@anom/norm, so this is an interpretation,
+  not a proven claim.
 
 ## Decision
 **Fail-fast → Proposal 4 (Dual-Gate Residual-and-Gradient RW-CEGAR).** P3, the
