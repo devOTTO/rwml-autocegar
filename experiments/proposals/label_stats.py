@@ -189,9 +189,12 @@ def write_corpus_doc(recs):
         "",
         "`shape`: **point-like** = median anomaly run ≤ 2 (isolated points); "
         "**block-like** = median run ≥ 20 (contiguous segments); **mixed** in between. "
-        "This distinguishes point-anomaly datasets (creditcard) from contiguous-block "
-        "datasets (gecco/SMAP/MITDB) — the RW-CEGAR 'erase' failure mode bites hardest "
-        "on long blocks the gate can localize.",
+        "Most collections are block-like (only creditcard/TAO are point-like, PSM mixed). "
+        "Since P1–P3 show that any CEGAR gating of the correction degrades RW-1's "
+        "already-strong |correction| contrast — and the point-like creditcard fails too "
+        "— this block dominance suggests the negative result generalizes broadly across "
+        "the corpus, not just the tested three. (No shape→failure causal claim is made: "
+        "GECCO's largest drop is confounded with RW-1 being strongest there.)",
         "",
         "## Per-collection summary",
         "",
