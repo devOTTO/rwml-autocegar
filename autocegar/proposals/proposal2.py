@@ -1,57 +1,59 @@
-"""Proposal 2 - Uncertainty-Aware Residual CEGAR.
+"""Proposal 2 - Uncertainty-Aware Residual CEGAR (docx-faithful).
 
 ================================ WHAT THIS IS ================================
-The doc's cleanest conceptual analogue of classification CEGAR: a **confident
-forecasting error = high residual AND low predictive uncertainty**. Same
-robust-z residual wrongness as P1, but the CONFIDENCE term is the model's
-*inverse predictive uncertainty* instead of a residual-tail signal.
+The doc's cleanest conceptual analogue of classification CEGAR: a confident
+forecasting error is high residual with LOW predictive uncertainty. Implemented
+straight from the doc's equations (not a robust-z adaptation):
 
-Uncertainty is estimated by **MC-dropout**: run K stochastic forward passes
-(dropout kept ON) on the same input and take the per-window prediction variance.
-Low variance -> the model is confident -> high C_t.
+    Ŷ_t^m = f_θ^m(W_t),  m = 1..M          # M MC-dropout forward passes
+    μ_t   = (1/M) Σ_m Ŷ_t^m                # MC mean prediction
+    u_t   = (1/M) Σ_m ‖Ŷ_t^m − μ_t‖²       # predictive uncertainty (variance, summed over dims)
+    e_t   = ‖Y_t − μ_t‖ / (u_t + ε)        # wrongness = residual (vs MC mean) STANDARDIZED by uncertainty
+    g_err,t  = σ(k_e · (e_t − τ_e))
+    g_conf,t = σ(k_c · (τ_u − u_t))         # confidence: raw u_t, high when uncertainty is low
+    g_t = g_err,t · g_conf,t
 
-Only `_compute_signals` is overridden (same reuse pattern as P1); it now also
-receives `model_input` (= x + correction) so it can do the extra MC-dropout
-forwards. Everything else — warm-up, gate, ScaleGrad, RW-1 correction, score,
-interpretability — is inherited from `CNN_RW_CEGAR`.
+Only `_compute_signals` is overridden; it receives `model_input` (= x+correction,
+for the MC passes) and `target` (= corrected Y_t, for ‖Y_t − μ_t‖). Everything
+else — warm-up, gate, ScaleGrad, RW-1 correction, score, interpretability — is
+inherited from `CNN_RW_CEGAR`.
 
-    E_t (wrongness)  = sigmoid(k  * (robust_z(residual) - tau))       # high residual
-    u_t              = mean_feat Var_{k=1..K} f_dropout(x+corr)       # MC-dropout var
-    C_t (confidence) = sigmoid(k_u * (tau_u - robust_z(u_t)))         # LOW uncertainty
-    gate  = E_t * C_t   (inherited: scale = 1 + lam*gate, then normalized)
+DIFFERENCE FROM P1: P1's wrongness is a robust-z of the residual and its
+confidence is 1 / a residual-tail sigmoid. P2 puts uncertainty into BOTH the
+wrongness (as the standardizing denominator) and the confidence, per the doc.
 
-Cost: K extra forward passes per batch (medium-high, as the doc notes). Risk:
-DeepAnT/RW dropout uncertainty may be poorly calibrated — the fail-fast screen
-tells us whether it helps in practice.
+KNOWN DEVIATION (documented): the doc's write-back multiplies the correction
+gradient by an extra conservative `g_safe,t` term to suppress writes on extreme
+anomaly tails. That needs a separate correction-gradient path (same single-graph
+coupling issue noted for P1's write-back), so it is NOT implemented — the RW
+correction uses the inherited ScaleGrad path. `e_t`/`u_t` are un-normalized (per
+the doc), so τ_e / τ_u are scale-dependent and may need tuning (MC-dropout
+uncertainty can be poorly calibrated — a risk the doc itself flags).
 =============================================================================
 """
-from collections import deque
-
 import torch
 
 from autocegar.rw_cegar import CNN_RW_CEGAR
 
-_MAD_TO_STD = 1.4826
-
 
 class CNN_RW_CEGAR_P2(CNN_RW_CEGAR):
-    """Proposal 2 = robust-z residual wrongness x inverse-MC-dropout-uncertainty confidence.
+    """Proposal 2 = uncertainty-standardized residual wrongness x inverse-uncertainty confidence.
 
     New hyperparameters beyond the base:
-        mc_samples  number of MC-dropout forward passes for the uncertainty estimate.
-        tau_u       robust-z threshold on uncertainty for the confidence sigmoid
-                    (C_t = 0.5 when uncertainty sits at this robust-z level).
-        k_u         confidence sigmoid sharpness (defaults to k when unset).
-        unc_buffer  rolling buffer length for the robust uncertainty stats.
-    Reused-with-P2-defaults: tau (residual robust-z threshold, 2.0), k (1.0),
-        warmup_epochs (10), correction_init ('zero'), scale_normalize (True).
+        mc_samples  M — number of MC-dropout forward passes.
+        tau_u       τ_u — uncertainty threshold in the confidence sigmoid
+                    (g_conf = 0.5 when u_t == τ_u).
+        k_u         k_c — confidence sigmoid sharpness (defaults to k when unset).
+        unc_eps     ε — stabilizer in the wrongness denominator (u_t + ε).
+    Reused-with-P2-defaults: tau (τ_e, residual/uncertainty-ratio threshold), k
+        (k_e), warmup_epochs (10), correction_init ('zero'), scale_normalize (True).
     """
 
     PROPOSAL = 2
     NAME = "P2-UncertaintyAware"
 
     def __init__(self, *args, mc_samples=5, tau_u=0.0, k_u=None,
-                 unc_buffer=5000, **kwargs):
+                 unc_eps=1e-6, **kwargs):
         kwargs.setdefault("tau", 2.0)
         kwargs.setdefault("k", 1.0)
         kwargs.setdefault("warmup_epochs", 10)
@@ -61,37 +63,26 @@ class CNN_RW_CEGAR_P2(CNN_RW_CEGAR):
         self.mc_samples = int(mc_samples)
         self.tau_u = float(tau_u)
         self.k_u = float(k_u) if k_u is not None else None
-        self._unc_buf = deque(maxlen=int(unc_buffer))
+        self.unc_eps = float(unc_eps)
 
-    @staticmethod
-    def _median_mad(buf):
-        if not buf:
-            return 0.0, 1.0
-        t = torch.tensor(list(buf), dtype=torch.float32)
-        med = t.median()
-        return float(med), max(float((t - med).abs().median()) * _MAD_TO_STD, 1e-8)
-
-    def _mc_uncertainty(self, model_input):
-        """Per-window predictive uncertainty via K MC-dropout forward passes. [B]."""
+    def _mc_forward(self, model_input):
+        """M MC-dropout passes. Returns stacked predictions ``[M, B, F]``."""
         self.model.train(True)  # keep dropout active for the stochastic passes
         B = model_input.shape[0]
         with torch.no_grad():
-            preds = torch.stack(
+            return torch.stack(
                 [self.model(model_input).view(B, self.feats * self.pred_len)
-                 for _ in range(self.mc_samples)], dim=0)     # [K, B, F]
-        return preds.var(dim=0).mean(dim=1)                    # [B]
+                 for _ in range(self.mc_samples)], dim=0)          # [M, B, F]
 
-    def _compute_signals(self, window_resid, res_stats, model_input=None):
-        # Wrongness: standardized residual (robust-z), same as P1.
-        med = res_stats.median()
-        mad = max(res_stats.mad(), 1e-8)
-        E_t = torch.sigmoid(self.k * ((window_resid - med) / mad - self.tau))   # [B]
+    def _compute_signals(self, window_resid, res_stats, model_input=None, target=None):
+        preds = self._mc_forward(model_input)                       # [M, B, F]
+        mu = preds.mean(dim=0)                                       # μ_t   [B, F]
+        u_t = preds.var(dim=0, unbiased=False).sum(dim=1)           # u_t   [B]  (= (1/M)Σ‖·‖²)
 
-        # Confidence: inverse predictive uncertainty (low uncertainty -> confident).
-        unc = self._mc_uncertainty(model_input)                # [B]
-        self._unc_buf.extend(unc.detach().flatten().cpu().tolist())
-        u_med, u_mad = self._median_mad(self._unc_buf)
-        unc_z = (unc - u_med) / u_mad
+        resid = torch.norm(target - mu, dim=1)                      # ‖Y_t − μ_t‖   [B]
+        e_t = resid / (u_t + self.unc_eps)                          # standardized residual [B]
+
         ku = self.k_u if self.k_u is not None else self.k
-        C_t = torch.sigmoid(ku * (self.tau_u - unc_z))         # high when unc is low
-        return E_t, C_t
+        g_err = torch.sigmoid(self.k * (e_t - self.tau))           # σ(k_e (e_t − τ_e))
+        g_conf = torch.sigmoid(ku * (self.tau_u - u_t))            # σ(k_c (τ_u − u_t)), raw u_t
+        return g_err, g_conf

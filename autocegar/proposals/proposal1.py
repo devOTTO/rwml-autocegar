@@ -73,10 +73,10 @@ class CNN_RW_CEGAR_P1(CNN_RW_CEGAR):
         # k_conf (k_c) defaults to k (k_e) when not given -> single shared sharpness.
         self.k_conf = float(k_conf) if k_conf is not None else None
 
-    def _compute_signals(self, window_resid, res_stats, model_input=None):
+    def _compute_signals(self, window_resid, res_stats, model_input=None, target=None):
         """Robust-z wrongness x (basic|tail-quantile) confidence. Both ``[B]``.
-        (``model_input`` is unused by P1 — only proposals doing extra forward
-        passes, e.g. P2 MC-dropout, need it.)
+        (``model_input`` / ``target`` are unused by P1 — only proposals doing extra
+        forward passes or MC-mean residuals, e.g. P2, need them.)
 
         Exact docx Proposal-1 formulas:
             e_t      = (r - median(r)) / MAD(r)              # RobustZ
