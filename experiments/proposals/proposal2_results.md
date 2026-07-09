@@ -49,26 +49,25 @@ characterization set (SMAP/SMD/MITDB — domain / anomaly-type diversity).
 | SMAP | 0.45 | 1.29 | ≈0.00 | −0.050 | near-neutral |
 | MITDB | 0.44 | 1.19 | ≈0.00 | −0.002 | near-neutral → nearly tied |
 
-**Unified reading (not "inert").** The MC-dropout confidence is uniformly weak
-(`trigger_frac ≈ 0` on every series, gate→label AUC > 0.5 on only 17/72), so the
-gate is driven mostly by the residual-wrongness term `e_t = ‖Y−μ‖/√(u+ε)`, noisily.
-The batch-normalized scale still redistributes the correction gradient by the
-*relative* gate, so the outcome depends on the signal type:
-- **Low-uncertainty / smooth signals (GECCO)**: √u is small, `e_t` still fires at
-  anomalies → correction concentrates there (corr@anom/norm 2.8×) → **P1-style
-  erasing → the largest loss (−0.43).** So on the verdict's key collection P2 fails
-  *like P1*, not "inertly".
-- **Noisy / high-uncertainty domains (SMAP, MITDB)**: √u is large, `e_t` is damped →
-  near-neutral gate → smallest losses (−0.05, −0.002). Here the "uninformative gate"
-  reading holds.
-- **OPPORTUNITY / SMD**: the gate anti-aligns with anomalies (AUC 0.21 / 0.23) and
-  the perturbation degrades the correction broadly (SMD AUC-PR 0.233→0.038); the
-  exact mechanism is less clean than the other two.
+**Reading (deliberately conservative).** P2's gate is **uninformative across the
+board** — gate→label AUC 0.21–0.53 (GECCO *included*, 0.525 vs P1's 0.90) and
+`trigger_frac ≈ 0` on every series; correction concentration is ≈1× everywhere
+**except GECCO (2.8×)**. Two things stop us from claiming a per-domain mechanism:
+1. **GECCO's 2.8× is probably RW-1's *native* behavior, not the gate.** With a
+   near-random gate (AUC 0.525), the concentration is most likely plain RW-1 growing
+   |correction| where residuals are high (= anomalies) — *not* gate-induced "P1-style
+   erasing" (P1 had a genuinely anomaly-aligned gate at AUC 0.90). A matched RW-1's
+   corr@anom/norm will confirm whether ~2.8× is native.
+2. **Loss magnitudes are confounded by the baseline.** The reference RW-1 is
+   best-HP/200ep vs our fixed-HP/100ep, so per-domain Δ magnitudes aren't cleanly
+   attributable to a P2 mechanism. A matched 100ep/fixed-HP RW-1 is running to
+   separate mechanism from training budget.
 
-Net: the uncertainty confidence **never helps** — where residual wrongness still
-fires it mildly erases (like P1), where uncertainty damps it the gate washes out.
-Confirms the doc's "MC-dropout uncertainty may be poorly calibrated" risk.
-(Contrast P1, GECCO: gate→label AUC ≈ 0.90, correction ≈ 5.5× — stronger targeting.)
+What **is** unambiguous: the MC-dropout confidence never yields a useful gate (it
+neither localizes anomalies nor activates), consistent with the doc's "MC-dropout
+uncertainty may be poorly calibrated" risk — and **P2 never beats RW-1**. (P1, by
+contrast, had a strongly anomaly-aligned gate — AUC ≈ 0.90, correction ≈ 5.5× — so
+P1 and P2 fail for genuinely different reasons.)
 
 ## Characterization hypothesis — NOT supported
 Hypothesis (a-priori): P2 helps where anomalies are genuinely uncertain (SMAP
