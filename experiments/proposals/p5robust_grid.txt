@@ -1,0 +1,10 @@
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --tag robust --tag rfixed
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --tag robust --tag rfixed
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --tag robust --tag rfixed
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --tag robust --tag rfixed
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --tag robust --tag rfixed
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --extra lam_mode=auto_tr --tag robust --tag rauto
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --extra lam_mode=auto_tr --tag robust --tag rauto
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --extra lam_mode=auto_tr --tag robust --tag rauto
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --extra lam_mode=auto_tr --tag robust --tag rauto
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --extra lam_mode=auto_tr --tag robust --tag rauto
