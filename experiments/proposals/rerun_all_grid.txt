@@ -1,0 +1,100 @@
+--proposal 1 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 1 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant basic --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 1 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant basic --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 2 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant mc5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 2 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant mc5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 3 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant full --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 3 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant full --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 4 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant gradnorm --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 4 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant gradnorm --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 129_OPPORTUNITY_id_1_HumanActivity_tr_1801_1st_1901.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 130_OPPORTUNITY_id_2_HumanActivity_tr_1045_1st_1145.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 131_OPPORTUNITY_id_3_HumanActivity_tr_7016_1st_26691.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 132_OPPORTUNITY_id_4_HumanActivity_tr_895_1st_995.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 133_OPPORTUNITY_id_5_HumanActivity_tr_1745_1st_6500.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 134_OPPORTUNITY_id_6_HumanActivity_tr_1477_1st_1577.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 135_OPPORTUNITY_id_7_HumanActivity_tr_2085_1st_2185.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 136_OPPORTUNITY_id_8_HumanActivity_tr_1495_1st_1595.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 173_GECCO_id_1_Sensor_tr_16165_1st_16265.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
+--proposal 5 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant h5 --epochs 100 --warmup 10 --tag collection --tag interp --tag cfgA
+--proposal 5 --dataset 137_CreditCard_id_1_Finance_tr_500_1st_541.csv --variant h5 --epochs 100 --warmup 0 --extra correction_init=neg_x --tag collection --tag interp --tag cfgB
