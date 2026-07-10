@@ -1,0 +1,15 @@
+--proposal 1 --dataset gecco --variant basic --epochs 100 --warmup 10 --wandb
+--proposal 1 --dataset opportunity --variant basic --epochs 100 --warmup 10 --wandb
+--proposal 1 --dataset creditcard --variant basic --epochs 100 --warmup 10 --wandb
+--proposal 2 --dataset gecco --variant mc5 --epochs 100 --warmup 10 --wandb
+--proposal 2 --dataset opportunity --variant mc5 --epochs 100 --warmup 10 --wandb
+--proposal 2 --dataset creditcard --variant mc5 --epochs 100 --warmup 10 --wandb
+--proposal 3 --dataset gecco --variant full --epochs 100 --warmup 10 --wandb
+--proposal 3 --dataset opportunity --variant full --epochs 100 --warmup 10 --wandb
+--proposal 3 --dataset creditcard --variant full --epochs 100 --warmup 10 --wandb
+--proposal 4 --dataset gecco --variant gradnorm --epochs 100 --warmup 10 --wandb
+--proposal 4 --dataset opportunity --variant gradnorm --epochs 100 --warmup 10 --wandb
+--proposal 4 --dataset creditcard --variant gradnorm --epochs 100 --warmup 10 --wandb
+--proposal 5 --dataset gecco --variant h5 --epochs 100 --warmup 10 --wandb
+--proposal 5 --dataset opportunity --variant h5 --epochs 100 --warmup 10 --wandb
+--proposal 5 --dataset creditcard --variant h5 --epochs 100 --warmup 10 --wandb
