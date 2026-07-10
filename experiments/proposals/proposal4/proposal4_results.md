@@ -1,73 +1,57 @@
 # Proposal 4 — Dual-Gate Residual-and-Gradient RW-CEGAR: Results
 
-**Verdict: P4 does not beat the best-HP/200ep RW-1 reproduction (0/3), but it is
-very close on GECCO — fixed 0.599 (Δ−0.040), auto-λ 0.628 (Δ−0.011) — the second-best
-GECCO after P5.**
+**Verdict: P4 does not beat the best-HP/200ep RW-1 on the verdict set (0/3), but it is the
+closest to RW-1 on GECCO after P5 (0.599, Δ−0.040; auto-λ 0.628).**
 
-## Config note
-Corrected config: warm-up = **plain RW-1** (gate OFF) then gate ON; `correction_init
-='neg_x'`. Delta config-confounded on the epoch/HP axis (100ep/default-HP vs
-best-HP/200ep).
+## What Proposal 4 is (docx spec, amplification-only Stage-1)
+A point is a confident error if it has high residual AND is gradient-correctable.
+`g_res = σ(k_r(robust_z(resid)−τ_r))`, `h_t = ‖∂loss/∂input‖` (per window, extra fwd+bwd),
+`g_grad = σ(k_h(robust_z(h_t)−τ_h))`, `g = g_res·g_grad`. `benefit` variant uses the
+loss-reduction estimate instead of ‖grad‖. Amplification only (docx write-back not
+implemented). Only `_compute_signals` overridden. Score = mean|correction|.
 
-## What Proposal 4 is (docx-faithful gate, amplification-only)
-A confident error = high residual AND gradient-correctable (small input changes
-strongly reduce the loss).
-```
-g_res  = σ(k_r·(robust_z(resid) − τ_r))
-h_t    = ‖∂loss/∂input‖ (per window)        # input-gradient correctability
-g_grad = σ(k_h·(robust_z(h_t) − τ_h))
-g      = g_res · g_grad
-```
-`h_t` is an extra fwd+bwd w.r.t. the input each batch; `benefit` variant uses the
-estimated loss reduction instead of ‖∇‖. **Stage-1: amplification only** (docx's
-normalized write-back not implemented). Shared hooks base.
+## Methodology (corrected config)
+`epochs=100`, `warmup=10`, `correction_init='neg_x'`, variant `gradnorm`, fixed `lam=1`.
+Warm-up = plain RW-1 then gate on. Unit = whole collection. Baseline = reproduction
+best-HP/200ep. **Caveat**: Δ config-confounded (epoch/HP) → indicative.
+**Cost** (gecco, 100ep): medium — an extra input-gradient fwd+bwd per batch (~1.5–2× P1).
 
-## Methodology (collection-level)
-Verdict set (10 series), `epochs=100`, `warmup=10`, variant `gradnorm`, fixed HP.
-RW-1/DeepAnT = reproduction means.
+## Verdict set (AUC-PR; fixed / auto-λ)
+| collection | n | DeepAnT* | RW-1* | P4 fixed | auto-λ | **Δ (fixed−RW-1)** | P4 AUC-ROC |
+|---|:-:|:--:|:--:|:--:|:--:|:--:|:--:|
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.107 | 0.110 | **−0.031** | 0.671 |
+| GECCO | 1 | 0.454 | 0.639 | 0.599 | 0.628 | **−0.040** | 0.935 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.026 | 0.025 | **−0.085** | 0.637 |
 
-## Collection-level results (fixed)
+Beats RW-1 on **0/3**; GECCO closest of the non-P5 proposals (auto-λ 0.628).
 
-| collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P4 AUC-PR | **Δ (P4−RW-1)** | P4 AUC-ROC |
-|---|:-:|:--:|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.107 | **−0.031** | 0.671 |
-| GECCO | 1 | 0.454 | 0.639 | 0.599 | **−0.040** | 0.935 |
-| CreditCard | 1 | 0.147 | 0.111 | 0.026 | **−0.085** | 0.637 |
+## Shape spectrum (AUC-PR; fixed / auto-λ; W = beats RW-1)
+| TAO (point, RW.995) | PSM (mixed, RW.137) | MSL (block, RW.131) | SWaT (block, RW.444) |
+|:--:|:--:|:--:|:--:|
+| 0.995 / 0.995 | 0.125 / 0.128 | 0.122 / 0.121 | 0.143 / 0.149 |
 
-**P4 beats RW-1 on 0/3**, but GECCO is very close (Δ−0.040 fixed, −0.011 auto).
+No wins — does not edge MSL; loses SWaT/PSM; TAO marginally below RW-1.
 
-### Correction diagnostics (thesis §8.4, fixed)
+## Correction diagnostics (thesis §8.4, fixed)
 | collection | gate→label AUC | corr@anom/norm | Overlap | AnomalyCoverage |
 |---|:--:|:--:|:--:|:--:|
-| GECCO | 0.810 | 10.40 | 0.209 | 0.840 |
-| CreditCard | 0.839 | 1.70 | 0.008 | 0.246 |
+| GECCO | 0.809 | 10.40 | 0.209 | 0.840 |
+| CreditCard | 0.839 | 1.70 | 0.009 | 0.246 |
 | OPPORTUNITY | 0.495 | 1.08 | 0.105 | 0.120 |
 
-## Auto-tuning ablation (auto-λ)
-| collection | fixed | auto-λ | RW-1 | beats? |
-|---|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 0.107 | 0.110 | 0.138 | no |
-| GECCO | 0.599 | 0.628 | 0.639 | no (Δ−0.011) |
-| CreditCard | 0.026 | 0.025 | 0.111 | no |
-
-auto-λ nearly closes the GECCO gap (0.599→0.628, Δ−0.011).
-
 ## Interpretability
-The dual gate localizes well on GECCO (gate→label AUC 0.81, corr 10.4×, coverage 0.84)
-and gets P4 to within ~0.01–0.04 of tuned RW-1 there. The input-gradient signal
-(`gradnorm`) is the primary novelty; on the injected-anomaly smoke test the `benefit`
-variant localized better than `gradnorm` (which, per the docx risk, also spikes at
-noise/discontinuities). Known minor: input-gradient forward runs in train mode (dropout
-noise).
-
-## Cost
-Medium — one extra input-gradient backward per batch (~1.5–2× P1). Indicative.
+The dual gate localizes well on GECCO (0.81) with strong correction concentration
+(10.4×, 84% coverage) → its high GECCO score (0.599). But the input-gradient signal is
+noisy (docx risk: gradients also spike at noise/discontinuities), and P4 does not
+generalize across shapes. Near the RW-1 ceiling on GECCO but never over it.
 
 ## Decision
-0/3 but the closest non-winner on GECCO; the correctability gate is a strong trigger.
+Does not beat tuned RW-1 → fail-fast to Proposal 5.
 
 ## Reproduce
 ```bash
-sbatch experiments/proposals/submit_rerun_all.sh
+source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
+cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
+sbatch experiments/proposals/proposal4/submit_p4_coll.sh
 python experiments/proposals/aggregate_collection.py --proposal 4
 ```

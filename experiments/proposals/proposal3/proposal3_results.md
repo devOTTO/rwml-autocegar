@@ -1,69 +1,56 @@
 # Proposal 3 — RW-Correction-Consistency CEGAR: Results
 
-**Verdict: P3 does not beat the best-HP/200ep RW-1 reproduction on any verdict
-collection (0/3). Near-ties on OPPORTUNITY (Δ−0.003) but stays low on GECCO (0.379).**
-
-## Config note
-Corrected config: warm-up = **plain RW-1** (gate OFF) then gate ON; `correction_init
-='neg_x'`. Old-config docs in `_backup_oldconfig/`. Delta config-confounded on the
-epoch/HP axis (100ep/default-HP vs best-HP/200ep).
+**Verdict: P3 does not beat the best-HP/200ep RW-1 on the verdict set (0/3). Under the
+corrected config it near-ties on OPPORTUNITY; GECCO stays well below.**
 
 ## What Proposal 3 is (docx-faithful, full)
-Signal = the RW correction's own behaviour. A point corrected large AND in a consistent
-direction over epochs is a confident anomaly candidate; P3 preserves the correction
-there instead of reshaping it away.
-```
-d_t = mean_feat|C_t|;  v_t = cos(ΔC^e, ΔC^{e-1})
-g   = σ(k_d(d−τ_d)/sd) · σ(k_v(v−τ_v)),  EMA-smoothed
-```
-Both docx mechanisms: gradient amplification (ScaleGrad, prev-epoch gate) + preserve
-write-back `grad_C·(1−γg)`. Variants: `full` (default), `preserve_only` (λ=0), `soft`.
-On the shared hooks base (`rw_cegar_hooks.py`).
+Signal = the correction's own behaviour. `d_t = mean_feat|C_t|` (magnitude),
+`v_t = cos(ΔC^e, ΔC^{e-1})` (direction stability), `g = σ(k_d(d−τ_d)/sd)·σ(k_v(v−τ_v))`,
+EMA-smoothed across epochs. Drives gradient amplification (previous-epoch gate → ScaleGrad)
+AND a preserve write-back `grad_C·(1−γg)`. Variants full / preserve_only / soft.
 
-## Methodology (collection-level)
-Verdict set (10 series), `epochs=100`, `warmup=10`, variant `full`, fixed HP
-(`gamma=0.9, corr_q=0.95, k_d=1, k_v=5`). RW-1/DeepAnT = reproduction means.
+## Methodology (corrected config)
+`epochs=100`, `warmup=10`, `correction_init='neg_x'`, variant `full`, fixed `lam=1`.
+Warm-up = plain RW-1 then gate on. Unit = whole collection. Baseline = reproduction
+best-HP/200ep. **Caveat**: Δ config-confounded (epoch/HP) → indicative.
+**Cost** (gecco, 100ep): ~7 min — the epoch-end direction-stability + amplification +
+preserve write-back stack on top of the RW-1 step.
 
-## Collection-level results (fixed)
+## Verdict set (AUC-PR; fixed / auto-λ)
+| collection | n | DeepAnT* | RW-1* | P3 fixed | auto-λ | **Δ (fixed−RW-1)** | P3 AUC-ROC |
+|---|:-:|:--:|:--:|:--:|:--:|:--:|:--:|
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.135 | 0.131 | **−0.004** | 0.717 |
+| GECCO | 1 | 0.454 | 0.639 | 0.379 | 0.386 | **−0.260** | 0.841 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.027 | 0.026 | **−0.084** | 0.614 |
 
-| collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P3 AUC-PR | **Δ (P3−RW-1)** | P3 AUC-ROC |
-|---|:-:|:--:|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.135 | **−0.003** | 0.717 |
-| GECCO | 1 | 0.454 | 0.639 | 0.379 | **−0.260** | 0.841 |
-| CreditCard | 1 | 0.147 | 0.111 | 0.027 | **−0.084** | 0.614 |
+Beats RW-1 on **0/3** (OPPORTUNITY closest near-tie, Δ−0.004).
 
-**P3 beats RW-1 on 0/3** (closest of any proposal on OPPORTUNITY, Δ−0.003).
+## Shape spectrum (AUC-PR; fixed / auto-λ; W = beats RW-1)
+| TAO (point, RW.995) | PSM (mixed, RW.137) | MSL (block, RW.131) | SWaT (block, RW.444) |
+|:--:|:--:|:--:|:--:|
+| 0.996 / 0.996 W | 0.118 / 0.118 | 0.128 / 0.130 | 0.141 / 0.143 |
 
-### Correction diagnostics (thesis §8.4, fixed)
+Only the trivial TAO tie; loses MSL/SWaT/PSM.
+
+## Correction diagnostics (thesis §8.4, fixed)
 | collection | gate→label AUC | corr@anom/norm | Overlap | AnomalyCoverage |
 |---|:--:|:--:|:--:|:--:|
 | GECCO | 0.829 | 7.51 | 0.152 | 0.610 |
 | CreditCard | 0.576 | 1.70 | 0.007 | 0.213 |
 | OPPORTUNITY | 0.359 | 1.10 | 0.137 | 0.167 |
 
-## Auto-tuning ablation (auto-λ)
-| collection | fixed | auto-λ | RW-1 | beats? |
-|---|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 0.135 | 0.131 | 0.138 | no |
-| GECCO | 0.379 | 0.386 | 0.639 | no |
-| CreditCard | 0.027 | 0.026 | 0.111 | no |
-
-Near-unchanged with auto-λ.
-
 ## Interpretability
-The consistency gate localizes reasonably on GECCO (0.83) and preserve keeps correction
-on anomalies (7.5×). It nearly ties RW-1 on OPPORTUNITY but the preserve mechanism does
-not lift GECCO to RW-1's level. `preserve_only` / `soft` variants available for ablation.
-
-## Cost
-Most expensive of the correction-hook proposals (epoch-end direction-stability + preserve
-write-back on top of RW-1). Indicative.
+The consistency gate localizes reasonably on GECCO (0.83) and preserves correction there
+(7.5×), but P3 still trails the residual/dual-gradient proposals on GECCO. The
+amplify-vs-preserve pair (docx) nets out roughly neutral. Near-ties RW-1 on opportunity.
 
 ## Decision
-0/3; preserve is competitive on OPPORTUNITY but does not surpass tuned RW-1.
+Does not beat tuned RW-1 → fail-fast to Proposal 4.
 
 ## Reproduce
 ```bash
-sbatch experiments/proposals/submit_rerun_all.sh
+source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
+cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
+sbatch experiments/proposals/proposal3/submit_p3_coll.sh
 python experiments/proposals/aggregate_collection.py --proposal 3
 ```

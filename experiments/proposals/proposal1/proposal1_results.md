@@ -1,81 +1,61 @@
 # Proposal 1 — Residual-Gated RW-CEGAR: Results
 
-**Verdict: P1 does not beat the best-HP/200ep RW-1 reproduction on any verdict
-collection (0/3), but under the corrected config it comes very close on OPPORTUNITY
-(Δ−0.015) and GECCO (Δ−0.074) — far better than the old-config run.**
-
-## Config note (important)
-These results use the **corrected training config**: warm-up runs **plain RW-1**
-(correction trained, CEGAR gate OFF) for `warmup=10`, then the gate switches on;
-`correction_init='neg_x'` (Algorithm-2 faithful, matching the RW-1 baseline). The
-earlier docs (now in `_backup_oldconfig/`) used forecaster-only warm-up + zero init,
-which depressed every proposal — a config artifact, not a property of the gate. The
-delta is still **config-confounded on one axis**: proposals are 100ep/default-HP while
-the RW-1 baseline is best-HP/200ep (indicative, not a clean isolation of the gate).
+**Verdict: P1 does not beat the best-HP/200ep RW-1 on the verdict set (0/3), but under
+the corrected config it is competitive (OPPORTUNITY near-tie, GECCO close). The old
+"clear loss" was largely a config artifact.**
 
 ## What Proposal 1 is
-Simplest CEGAR × RW-ML hybrid on the reproduced RW-1 (Algorithm 2). Overrides only
-the signals:
-- **Wrongness** `E_t = sigmoid(k·(robust_z − τ))`, `robust_z = (r − median)/MAD`
-- **Confidence** `C_t = 1` (basic) or tail-quantile (selective)
-- **Gate** `g = E_t·C_t`, **scale** `s = 1+λg` on the per-window forecasting-loss
-  gradient via `ScaleGrad`. Score = `mean|correction|`.
+Simplest CEGAR × RW-ML hybrid on the reproduced RW-1 (Algorithm 2); overrides only the
+signals: wrongness `E_t = σ(k·(robust_z − τ))`, confidence `C_t = 1` (basic); gate
+`g = E_t·C_t`, scale `s = 1+λg` applied to the per-window forecasting-loss gradient via
+ScaleGrad. Score = `mean|correction|`.
 
-## Methodology (collection-level)
-Verdict set: opportunity (8 series) + gecco (1) + creditcard (1) = 10 series, averaged
-per collection. `epochs=100`, `warmup=10`, fixed HP (`lam=1, tau=2, k=1`), variant
-`basic`. RW-1 / DeepAnT = reproduction per-collection means (best-HP/200ep, reference).
+## Methodology (corrected config)
+`epochs=100`, `warmup=10`, `correction_init='neg_x'`, fixed `lam=1, tau=2`. **Warm-up =
+plain RW-1 (correction trained, gate OFF), then the gate switches on** — model starts as
+RW-1. (Replaces the earlier forecaster-only warm-up + zero-init confound, archived in
+`_backup_oldconfig/`.) Unit = whole collection (opportunity mean over 8 series). Baseline
+RW-1 / DeepAnT = reproduction per-collection means (best-HP/200ep).
+**Caveat**: Δ is config-confounded on the epoch/HP axis (100ep/default-HP vs best-HP/200ep)
+→ indicative. **Cost** (gecco, 100ep): ~5 min, the cheapest (1 forward/window, like RW-1).
 
-## Collection-level results (fixed λ)
+## Verdict set (AUC-PR; fixed / auto-λ)
+| collection | n | DeepAnT* | RW-1* | P1 fixed | auto-λ | **Δ (fixed−RW-1)** | P1 AUC-ROC |
+|---|:-:|:--:|:--:|:--:|:--:|:--:|:--:|
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.123 | 0.113 | **−0.015** | 0.703 |
+| GECCO | 1 | 0.454 | 0.639 | 0.565 | 0.618 | **−0.073** | 0.918 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.032 | 0.035 | **−0.108** | 0.716 |
 
-`*` DeepAnT / RW-1 = reproduction per-collection means (reference). Δ = P1 − RW-1.
+Beats RW-1 on **0/3** (OPPORTUNITY near-tie). auto-λ lifts GECCO (0.565→0.618).
 
-| collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P1 AUC-PR | **Δ (P1−RW-1)** | P1 AUC-ROC |
-|---|:-:|:--:|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.123 | **−0.015** | 0.703 |
-| GECCO | 1 | 0.454 | 0.639 | 0.565 | **−0.074** | 0.918 |
-| CreditCard | 1 | 0.147 | 0.111 | 0.032 | **−0.079** | 0.716 |
+## Shape spectrum (AUC-PR; fixed / auto-λ; W = beats RW-1)
+| TAO (point, RW.995) | PSM (mixed, RW.137) | MSL (block, RW.131) | SWaT (block, RW.444) |
+|:--:|:--:|:--:|:--:|
+| 0.995 / 0.995 W | 0.125 / 0.126 | **0.136 W** / 0.118 | 0.139 / 0.131 |
 
-**P1 beats RW-1 on 0/3**, but near-ties on OPPORTUNITY and closes most of the GECCO gap.
+Ties on TAO (both saturate), edges MSL (weak baseline, margin ~noise), loses SWaT/PSM.
 
-### Correction diagnostics (thesis §8.4, fixed λ)
-`Overlap` = of top-5% |correction| steps, fraction anomalous; `AnomalyCoverage` = of
-anomalies, fraction in the top-5%; `corr@anom/norm` = anomaly/normal correction ratio;
-`gate→label AUC` = gate localization.
-
+## Correction diagnostics (thesis §8.4, fixed)
 | collection | gate→label AUC | corr@anom/norm | Overlap | AnomalyCoverage |
 |---|:--:|:--:|:--:|:--:|
 | GECCO | 0.896 | 11.60 | 0.194 | 0.776 |
-| CreditCard | 0.951 | 1.85 | 0.011 | 0.315 |
+| CreditCard | 0.951 | 1.84 | 0.011 | 0.315 |
 | OPPORTUNITY | 0.480 | 1.09 | 0.126 | 0.145 |
 
-## Auto-tuning ablation (auto-λ, `lam_mode=auto_tr`)
-| collection | fixed λ | auto-λ | RW-1 | beats? |
-|---|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 0.123 | 0.113 | 0.138 | no |
-| GECCO | 0.565 | 0.618 | 0.639 | no (closes to −0.021) |
-| CreditCard | 0.032 | 0.035 | 0.111 | no |
-
-auto-λ helps on GECCO (0.565→0.618) but still 0/3.
-
 ## Interpretability
-On GECCO the gate localizes anomalies (gate→label AUC 0.90) and correction concentrates
-there (11.6×, covering 78%). Under the corrected config P1 is close to RW-1 on
-GECCO/OPPORTUNITY; CreditCard (isolated point anomalies) is where it fails — a
-`mean|correction|` score struggles to rank single-point anomalies.
-
-## Cost
-Per-series wall-clock ~1–14 min (100ep, ∝ series length); P1 is the cheapest (1 forward
-pass/window, same as RW-1). Indicative, single no-seed run.
+On GECCO the residual gate localizes anomalies (AUC 0.90) and correction concentrates
+there (11.6×, 78% coverage); with the corrected warm-up this now coincides with a high
+AUC-PR (0.565) rather than the depressed old value. On opportunity the gate is
+uninformative (0.48) yet P1 near-ties RW-1. CreditCard (point) stays weak.
 
 ## Decision
-Under the corrected config P1 is competitive but does not surpass the tuned RW-1
-ceiling (0/3). See P5 for the one proposal that beats RW-1 (GECCO).
+Competitive but does not beat tuned RW-1 → fail-fast to Proposal 2. The "gating clearly
+loses" reading of the old config does not hold.
 
 ## Reproduce
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
 cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
-sbatch experiments/proposals/submit_rerun_all.sh          # P1-P5 verdict, corrected config
+sbatch experiments/proposals/proposal1/submit_p1_coll.sh
 python experiments/proposals/aggregate_collection.py --proposal 1
 ```

@@ -1,84 +1,71 @@
 # Proposal 5 — Temporal-Persistence Confident-Error CEGAR: Results
 
-**Verdict: P5 BEATS the best-HP/200ep RW-1 reproduction on GECCO — fixed 0.648
-(Δ+0.009), auto-λ 0.682 (Δ+0.043) — the only proposal to beat RW-1 on any collection
-(1/3). (Single no-seed run; the fixed margin is small — see caveat.)**
+**Verdict: P5 is the only proposal that beats the best-HP/200ep RW-1 on a verdict
+collection — GECCO, robustly with auto-λ (6/6 runs, min 0.661 > 0.639). Fixed-λ ties.
+But the win does NOT generalize across the shape spectrum.**
 
-## Config note
-Corrected config: warm-up = **plain RW-1** (gate OFF) then gate ON; `correction_init
-='neg_x'`. Delta config-confounded on the epoch/HP axis (P5 is 100ep/default-HP yet
-beats a best-HP/200ep RW-1 — which makes the win stronger, not weaker).
-
-## What Proposal 5 is (docx-faithful gate, amplification-only)
+## What Proposal 5 is (docx-faithful)
 Gate only errors that PERSIST over neighbouring time windows, not isolated spikes.
-```
-m_t = 1(e_t > τ_e),  τ_e = Q_{q_e}(e)         # residual indicator
-p_t = mean(m_{t-h .. t+h})                     # temporal persistence (±h)
-g   = σ(k(e_t−τ_e)/mad) · σ(k_p(p_t−τ_p))
-```
-Persistence computed epoch-end (batches are shuffled) and used next epoch for
-amplification (ScaleGrad). Variants `h5` (default, ±5) / `h25` (±25). Cheapest of the
-five (no extra forward). Shared hooks base.
+`m_t = 1(e_t>τ_e)` (τ_e = residual q_e quantile), `p_t = mean(m_{t-h..t+h})` (temporal
+persistence, epoch-end), `g = σ(k(e_t−τ_e)/mad)·σ(k_p(p_t−τ_p))`. Previous-epoch gate
+drives amplification (ScaleGrad). Variants h5 / h25. Score = mean|correction|.
 
-## Methodology (collection-level)
-Verdict set (10 series), `epochs=100`, `warmup=10`, variant `h5`, fixed HP.
-RW-1/DeepAnT = reproduction means.
+## Methodology (corrected config)
+`epochs=100`, `warmup=10`, `correction_init='neg_x'`, variant `h5`, fixed `lam=1`.
+Warm-up = plain RW-1 then gate on. Unit = whole collection. Baseline = reproduction
+best-HP/200ep. **Caveat**: Δ config-confounded (epoch/HP) → indicative.
+**Cost** (gecco, 100ep): low — a moving-average of the residual indicator, no extra
+forward (cheapest of the gated proposals).
 
-## Collection-level results (fixed)
+## Verdict set (AUC-PR; fixed / auto-λ)
+| collection | n | DeepAnT* | RW-1* | P5 fixed | auto-λ | **Δ (fixed−RW-1)** | P5 AUC-ROC |
+|---|:-:|:--:|:--:|:--:|:--:|:--:|:--:|
+| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.114 | 0.111 | **−0.025** | 0.683 |
+| GECCO | 1 | 0.454 | 0.639 | **0.643** | **0.677** | **+0.004 / +0.038** | 0.953 |
+| CreditCard | 1 | 0.147 | 0.111 | 0.029 | 0.032 | **−0.082** | 0.629 |
 
-| collection | n | DeepAnT AUC-PR* | RW-1 AUC-PR* | P5 AUC-PR | **Δ (P5−RW-1)** | P5 AUC-ROC |
-|---|:-:|:--:|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 8 | 0.272 | 0.138 | 0.114 | **−0.024** | 0.683 |
-| **GECCO** | 1 | 0.454 | 0.639 | **0.648** | **+0.009** | 0.955 |
-| CreditCard | 1 | 0.147 | 0.111 | 0.029 | **−0.082** | 0.630 |
+**Beats RW-1 on GECCO (1/3)** — the only proposal to win any verdict collection.
 
-**P5 beats RW-1 on 1/3 (GECCO).** auto-λ widens the GECCO win to **0.682 (Δ+0.043)**.
+## GECCO robustness (6 runs each, no fixed seed)
+| | runs | mean | > RW-1 0.639 |
+|---|---|:--:|:--:|
+| fixed-λ | 0.633, 0.635, 0.639, 0.648, 0.648, 0.652 | 0.643 | 4/6 (min 0.633 — **tie**) |
+| **auto-λ** | 0.661, 0.672, 0.672, 0.682, 0.683, 0.690 | **0.677** | **6/6 (min 0.661 — robust win)** |
 
-### Correction diagnostics (thesis §8.4, fixed)
+Fixed P5 straddles RW-1 (statistical tie); **auto-λ P5 beats it on every run** — a real,
+reproducible win, not no-seed noise.
+
+## Shape spectrum (AUC-PR; fixed / auto-λ; W = beats RW-1)
+| TAO (point, RW.995) | PSM (mixed, RW.137) | MSL (block, RW.131) | SWaT (block, RW.444) |
+|:--:|:--:|:--:|:--:|
+| 0.996 / 0.995 W | 0.124 / 0.130 | **0.137 W** / 0.130 | 0.141 / 0.154 |
+
+**The GECCO win does not generalize.** TAO is a trivial tie (both saturate); MSL edges by
+~0.005 (noise level); **SWaT (block) is a heavy loss (0.14 vs 0.444)**; PSM below. P5 is
+NOT a general "block-anomaly" method — it loses on the extreme-block SWaT and near-ties
+the block OPPORTUNITY.
+
+## Correction diagnostics (thesis §8.4, fixed)
 | collection | gate→label AUC | corr@anom/norm | Overlap | AnomalyCoverage |
 |---|:--:|:--:|:--:|:--:|
 | GECCO | 0.945 | 12.55 | 0.219 | 0.877 |
 | CreditCard | 0.899 | 1.75 | 0.008 | 0.222 |
-| OPPORTUNITY | 0.684 | 1.09 | 0.118 | 0.134 |
+| OPPORTUNITY | 0.684 | 1.08 | 0.118 | 0.134 |
 
-Best gate localization of all five on GECCO (0.945) and the highest correction
-concentration (12.5×, covering 88% of anomalies).
-
-## Auto-tuning ablation (auto-λ)
-| collection | fixed | auto-λ | RW-1 | beats? |
-|---|:--:|:--:|:--:|:--:|
-| OPPORTUNITY | 0.114 | 0.111 | 0.138 | no |
-| **GECCO** | 0.648 | **0.682** | 0.639 | **YES (Δ+0.043)** |
-| CreditCard | 0.029 | 0.032 | 0.111 | no |
-
-auto-λ turns the marginal fixed win (+0.009) into a comfortable one (+0.043).
-
-## Interpretability
-GECCO anomalies are long contiguous blocks; the persistence gate filters isolated
-residual spikes and locks onto those blocks (gate→label AUC 0.95), concentrating
-correction there (12.5×). This is exactly where a temporal-persistence trigger should
-win, and it does. **CreditCard (isolated point anomalies) is the opposite regime** —
-persistence smoothing cannot lock onto single points, so P5 loses there (0.029), matching
-the docx risk that smoothing struggles with point anomalies. OPPORTUNITY is near-tie.
-
-## Caveat (before over-claiming the GECCO win)
-GECCO is n=1 and there is no fixed seed; the **fixed** margin (+0.009) is within
-plausible run-to-run variance. The **auto-λ** margin (+0.043) is more comfortable, and
-P5 wins despite being 100ep/default-HP vs a best-HP/200ep baseline. Still, a
-robustness check (repeat GECCO P5 several times) is recommended before stating the win
-without qualification.
-
-## Cost
-Lowest of the five (moving-average of the residual indicator; no extra forward). Indicative.
+P5 has the best gate localization (GECCO 0.945) and correction concentration/coverage of
+the five — consistent with it being the one that wins on GECCO.
 
 ## Decision
-**P5 is the standout: the only proposal to beat tuned RW-1 (GECCO, 1/3), strongest where
-anomalies are contiguous blocks.** Recommend a GECCO robustness re-run and extension to
-the block-heavy characterization collections (SMAP/SMD/MITDB) to test whether the
-block-anomaly advantage generalizes.
+**End of the P1–P5 arc.** The corrected config overturns the old "gating never helps"
+verdict; P5 + auto-λ is a genuine, reproducible win over the tuned RW-1 on GECCO. However
+it does not generalize across the shape spectrum (SWaT block lost, MSL within noise,
+point/mixed ≈/below RW-1), and all deltas remain config-confounded on the epoch/HP axis.
+Net: a scoped positive (GECCO) on a corrected-config negative-results arc.
 
 ## Reproduce
 ```bash
-sbatch experiments/proposals/submit_rerun_all.sh
+source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
+cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
+sbatch experiments/proposals/proposal5/submit_p5_coll.sh
 python experiments/proposals/aggregate_collection.py --proposal 5
 ```
