@@ -131,6 +131,17 @@ config schema — old runs have `cegar.*` / `method`, these do not):
   the `train/` group; keep `variant`, `tau`, `lam`, `auc_pr`, `auc_roc`,
   `delta_pr` visible. Save it as a workspace view to reuse for P2–P5.
 
+**Telling this study's runs from the superseded old-config runs** (same schema, so
+the `cegar.*` filter above does NOT separate them — they differ only by config):
+
+- Distinguisher = **`config.correction_init`**: `neg_x` = corrected config (this study:
+  warm-up = plain RW-1 then gate); `zero` (or absent) = old config (forecaster-only
+  warm-up, now in `_backup_oldconfig/`).
+- Both generations sync into `Group = proposalN`. Run
+  `python experiments/proposals/regroup_corrected.py --apply` once after syncing — it
+  moves every `correction_init=neg_x` run to **`Group = proposalN_corrected`**, leaving
+  the old runs in `proposalN`. Then filter `Group = proposalN_corrected` for this study.
+
 ### Which values to look at
 
 Run types: `P{N}-{variant}-{dataset}-...` (proposal), `RW1-baseline-...` (baseline),
@@ -142,21 +153,31 @@ Run types: `P{N}-{variant}-{dataset}-...` (proposal), `RW1-baseline-...` (baseli
 - **`delta_pr`, `delta_roc`** — proposal − RW-1. Positive = improvement. **Main verdict.**
 
 **2. Interpretability — why (run summary, only on the `interp` batch):**
-- **`gate/auc_roc_vs_label`** — does the gate localize anomalies? (>0.5 = targets them)
-- **`gate/anom_over_norm`** — how many × more the gate fires on anomaly vs normal steps.
-- **`corr/anom_over_norm`** — how many × more correction lands on anomalies. Under the
+
+*Gate — where the gate fires* (per-timestep gate activation `g`, anomaly labels `y`):
+- **`gate/auc_roc_vs_label`** — does the gate localize anomalies? ROC-AUC of `g` vs `y` (>0.5 = targets them).
+- `gate/auc_pr_vs_label` — same localization, PR-AUC (stricter under class imbalance).
+- **`gate/anom_over_norm`** — `g[y].mean() / g[~y].mean()`: how many × more the gate fires on anomaly vs normal steps.
+- `gate/anom_mean`, `gate/norm_mean` — the two means behind that ratio.
+- `gate/trigger_frac` — fraction of the timeline gated (`g > 0.5`); `gate/trigger_count` — how many steps.
+- `gate/trigger_precision` — of gated steps, fraction that are anomalies; `gate/trigger_recall` — of anomaly steps, fraction gated.
+
+*Correction — where |correction| lands* (per-timestep score `s = mean|correction|`):
+- **`corr/anom_over_norm`** — `s[y].mean() / s[~y].mean()`: how many × more correction lands on anomalies. Under the
   corrected config (neg_x) **high = good** (correction concentrated on anomalies →
   higher score-contrast → higher AUC-PR; e.g. P1 GECCO 11.6×). Under the old zero-init
   config the same concentration was the "erase" risk — see the arc summary at the top.
-- `corr/anom_mean`, `corr/norm_mean` — correction magnitude, anomaly vs normal.
-- `corr/overlap` — of high-correction steps (|corr| above its `corr_q` quantile),
+- `corr/anom_mean`, `corr/norm_mean` — the two means behind that ratio.
+- `corr/overlap` — of high-correction steps (`s > corr/tau_c_q95`),
   fraction that are anomalies (correction **precision**, Baldo thesis Sec. 8.4).
-- `corr/anomaly_coverage` — of anomaly steps, fraction that get a high correction
+- `corr/anomaly_coverage` — of anomaly steps, fraction that are high-correction
   (correction **recall**, Sec. 8.4).
-- `corr/tau_c_q95` — the |correction| threshold (q95) used for the two above.
-- `gate/trigger_frac` — fraction of the timeline gated; `gate/trigger_count` — how many steps.
-- `gate/trigger_precision` — of gated steps, fraction that are anomalies.
-- `gate/trigger_recall` — of anomaly steps, fraction gated.
+- `corr/tau_c_q95` — the |correction| threshold = 95th percentile of `s`, used for the two above.
+
+*Computed by `run_proposal.py:gate_interpretability()`. Every anomaly-vs-normal metric
+above (all `*_over_norm`, `*_mean`, `*auc*_vs_label`, `overlap`, `anomaly_coverage`)
+requires **both** classes present in the series labels (`y.any() and (~y).any()`); on
+all-normal or all-anomaly series they are omitted. Gate "triggered" = `g > 0.5`.*
 
 **3. Training curves — per epoch (charts, `train/` group):**
 `train/loss`, `train/l1`, `train/gate_mean`, `train/lam`, `train/tau`, `train/q95`,
