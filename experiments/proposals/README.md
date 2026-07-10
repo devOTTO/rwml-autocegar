@@ -18,7 +18,7 @@ on the verdict set (opportunity/gecco/creditcard) vs the best-HP/200ep RW-1 repr
 - P4 close on GECCO (0.599 / auto 0.628), P1 (0.565 / 0.618); all near-tie on OPPORTUNITY.
 - Everyone still loses on CreditCard (isolated point anomalies).
 - The delta is config-confounded on one axis (proposals 100ep/default-HP vs RW-1
-  best-HP/200ep), so it is indicative — see `proposalN/proposalN_results.md`.
+  best-HP/200ep), so it is indicative — see `results/proposalN_results.md`.
 
 **Evaluation unit = whole collection.** `--dataset` accepts a raw TSB-AD-M series
 filename, so `submit_pN_coll.sh` runs one array task per series and
@@ -26,18 +26,19 @@ filename, so `submit_pN_coll.sh` runs one array task per series and
 compares against the reproduction RW-1 / DeepAnT per-collection means (reference).
 The single-`--dataset` / `all` mode remains for quick one-series screens.
 
-- Model code:     `autocegar/proposals/proposalN.py` (+ registry in `__init__.py`;
-                  P3/P4/P5 share the hooks base `autocegar/rw_cegar_hooks.py`).
-- Runner:         `run_proposal.py` (repo root)
-- Per-proposal:   `experiments/proposals/proposalN/` — grids (`pN_*_grid.txt`),
-                  submit scripts (`submit_pN*.sh`), `collection_table_pN.md`, and
-                  the write-up `proposalN_results.md`.
-- Shared (root):  `aggregate_collection.py`, `aggregate_sweep.py`, `label_stats.py`,
-                  `plot_correction_example.py`, `log_proposal_summary_to_wandb.py`,
-                  `dataset_sizes.md` (root, size + anomaly), `figures/`, `auto_grid.txt` +
-                  `submit_auto.sh` (P1+P2 auto ablation).
-- Results:        `experiments/proposals/results_pN.csv` (raw, gitignored, written
-                  by the runner), wandb project `rwml-autocegar`.
+Layout of `experiments/proposals/`:
+- **`results/`** — the read docs: `SUMMARY.md` (cross-proposal), `proposalN_results.md`
+  (×5), `collection_table_pN.md` (×5). **Start here.**
+- **`runs/`** — all grids (`*_grid.txt`) + SLURM submit scripts (`submit_*.sh`).
+- **(root, tools)** — `aggregate_collection.py`, `aggregate_sweep.py`, `aggregate_ab.py`,
+  `label_stats.py`, `plot_correction_example.py`, `log_proposal_summary_to_wandb.py`,
+  `log_all_summary.py`, `regroup_corrected.py`, `batch_sync.sh`.
+- **`figures/`** — correction-example + corpus-timeline PNGs.
+- **`_backup_oldconfig/`** — superseded old-config (forecaster-warm-up + zero-init) docs.
+- `results_pN.csv` — raw per-run rows (gitignored, written here by `run_proposal.py`).
+
+- Model code: `autocegar/proposals/proposalN.py` (+ registry `__init__.py`; P1/P2 base
+  `rw_cegar.py`, P3/P4/P5 base `rw_cegar_hooks.py`). Runner: `run_proposal.py` (repo root).
 
 ## 0. Setup (every session)
 
@@ -88,7 +89,7 @@ them as a slurm array (P1: 11 tasks, `%6` concurrency, wandb **offline** on the
 compute node).
 
 ```bash
-sbatch experiments/proposals/proposal1/submit_p1_grid.sh
+sbatch experiments/proposals/runs/submit_p1_grid.sh
 squeue -u $USER                       # watch progress
 sacct -j <jobid> --format=JobID,JobName,Elapsed,State   # per-task timing
 ```
