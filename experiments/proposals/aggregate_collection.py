@@ -40,7 +40,13 @@ def main():
     # base variant (basic/mc5), tau_u=0. Filter so sweeps don't pollute the mean.
     for col, val in [("tau", 2.0), ("lam", 1.0)]:
         df = df[pd.to_numeric(df[col], errors="coerce") == val]
-    df = df[df["variant"].isin(["basic", "mc5", "full"])]  # full = P3 docx default
+    try:                        # keep only each proposal's default variant
+        from autocegar.proposals import get_proposal
+        dv = get_proposal(args.proposal).get("default_variant")
+        if dv:
+            df = df[df["variant"] == dv]
+    except Exception:
+        df = df[df["variant"].isin(["basic", "mc5", "full", "gradnorm", "h5"])]
     if "tau_u" in df.columns:
         df = df[pd.to_numeric(df["tau_u"], errors="coerce").fillna(0.0) == 0.0]
     if "extra" in df.columns:  # exclude sweep/auto rows (they carry --extra)

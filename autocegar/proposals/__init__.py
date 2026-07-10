@@ -20,6 +20,8 @@ doc but not yet implemented.
 from .proposal1 import CNN_RW_CEGAR_P1
 from .proposal2 import CNN_RW_CEGAR_P2
 from .proposal3 import CNN_RW_CEGAR_P3
+from .proposal4 import CNN_RW_CEGAR_P4
+from .proposal5 import CNN_RW_CEGAR_P5
 
 PROPOSALS = {
     1: {
@@ -59,17 +61,25 @@ PROPOSALS = {
     },
     4: {
         "name": "Dual-Gate Residual-and-Gradient RW-CEGAR",
-        "cls": None,  # TODO: residual gate x input-gradient correctability (Proposal 4)
-        "summary": "Gate = high residual AND high input-gradient reducibility.",
-        "variants": {},
-        "default_variant": None,
+        "cls": CNN_RW_CEGAR_P4,
+        "summary": "Gate = high residual AND high input-gradient reducibility "
+                   "(correctability). Extra fwd+bwd w.r.t. the input per batch.",
+        "variants": {
+            "gradnorm": {"use_benefit": False},   # g_grad from ||d loss/d input||
+            "benefit":  {"use_benefit": True},    # g_grad from estimated loss reduction
+        },
+        "default_variant": "gradnorm",
     },
     5: {
         "name": "Temporal-Persistence Confident-Error CEGAR",
-        "cls": None,  # TODO: persistence-smoothed residual gate (Proposal 5)
-        "summary": "Gate only residual regions that persist over neighbouring windows.",
-        "variants": {},
-        "default_variant": None,
+        "cls": CNN_RW_CEGAR_P5,
+        "summary": "Gate = residual x temporal persistence (moving-average of the "
+                   "residual indicator over +/-h neighbouring windows).",
+        "variants": {
+            "h5":  {"persist_h": 5},    # persistence window +/-5 (11 steps)
+            "h25": {"persist_h": 25},   # wider +/-25 (51 steps)
+        },
+        "default_variant": "h5",
     },
 }
 
