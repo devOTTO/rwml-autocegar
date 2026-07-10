@@ -144,8 +144,9 @@ def make_figure(proposal, dataset, variant, epochs, warmup, tau, lam, pad, wandb
 def main():
     p = argparse.ArgumentParser(description=__doc__, formatter_class=argparse.RawDescriptionHelpFormatter)
     p.add_argument("--proposal", type=int, default=1)
-    p.add_argument("--dataset", default="gecco", choices=list(DATASETS) + ["all"],
-                   help="one registry key, or 'all' to loop over every tested representative")
+    p.add_argument("--dataset", default="gecco",
+                   help="a registry key, a raw TSB-AD-M filename, or 'all' to loop "
+                        "over every tested representative")
     p.add_argument("--variant", default="basic")
     p.add_argument("--epochs", type=int, default=100)
     p.add_argument("--warmup", type=int, default=10)
