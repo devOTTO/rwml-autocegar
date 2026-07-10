@@ -1,11 +1,11 @@
 # Auto-CEGAR proposals — how to run the experiments
 
-Fail-fast harness for the 5 candidate architectures from
-`rw_cegar_research_Proposal_1_to_Proposal_5.docx`. Each proposal is tested first
-on **3 selected datasets** (opportunity / gecco / creditcard — topically
-disconnected, spanning the RW-vs-DeepAnT performance range). If a proposal beats
-the RW-1 baseline on all three it graduates to a full run; otherwise we move on to
-the next proposal.
+Harness for the 5 candidate architectures from
+`rw_cegar_research_Proposal_1_to_Proposal_5.docx`. Each is evaluated on a **verdict set**
+of 3 collections (opportunity / gecco / creditcard — topically disconnected, spanning the
+RW-vs-DeepAnT range) plus a shape-spectrum extension (TAO/PSM/MSL/SWaT). All five were
+implemented and run; the corrected-config verdict is the summary just below (it is NOT a
+sequential "beat-or-drop" screen — the whole set was evaluated).
 
 **Implemented: all five** — P1 (Residual-Gated), P2 (Uncertainty/MC-dropout), P3
 (Correction-Consistency), P4 (Dual Residual+Gradient), P5 (Temporal-Persistence).
@@ -70,7 +70,7 @@ Key flags (`python run_proposal.py --help` for all):
 | `--proposal N` | which proposal (1–5) | 1 |
 | `--dataset` | `opportunity` / `gecco` / `creditcard` / `all` | all |
 | `--variant` | proposal variant (P1: `basic`/`selective`; P2: `mc5`/`mc10`) | proposal default |
-| `--epochs` / `--warmup` | training length / forecaster-only warm-up | 100 / 10 |
+| `--epochs` / `--warmup` | training length / warm-up = plain RW-1 (gate off) then gate on | 100 / 10 |
 | `--lam` / `--tau` / `--k` | gate strength / robust-z threshold / sharpness | 1.0 / 2.0 / 1.0 |
 | `--extra key=val` | proposal-specific kwarg, repeatable (e.g. P2 `--extra tau_u=1.0`) | — |
 | `--baseline` | also run plain RW-1 and log the delta | off |
@@ -143,8 +143,10 @@ Run types: `P{N}-{variant}-{dataset}-...` (proposal), `RW1-baseline-...` (baseli
 **2. Interpretability — why (run summary, only on the `interp` batch):**
 - **`gate/auc_roc_vs_label`** — does the gate localize anomalies? (>0.5 = targets them)
 - **`gate/anom_over_norm`** — how many × more the gate fires on anomaly vs normal steps.
-- **`corr/anom_over_norm`** — how many × more correction lands on anomalies
-  (**high = it is erasing the anomalies → the P1 risk**).
+- **`corr/anom_over_norm`** — how many × more correction lands on anomalies. Under the
+  corrected config (neg_x) **high = good** (correction concentrated on anomalies →
+  higher score-contrast → higher AUC-PR; e.g. P1 GECCO 11.6×). Under the old zero-init
+  config the same concentration was the "erase" risk — see the arc summary at the top.
 - `corr/anom_mean`, `corr/norm_mean` — correction magnitude, anomaly vs normal.
 - `corr/overlap` — of high-correction steps (|corr| above its `corr_q` quantile),
   fraction that are anomalies (correction **precision**, Baldo thesis Sec. 8.4).
@@ -168,9 +170,10 @@ Run types: `P{N}-{variant}-{dataset}-...` (proposal), `RW1-baseline-...` (baseli
 `correction_example` image (original vs corrected signal).
 
 **Quick read:** `delta_pr` (did it win?) + `gate/auc_roc_vs_label` (did the gate
-target anomalies?) + `corr/anom_over_norm` (did it then erase them?) explains both
-whether and why. Note: `gate/*` and `corr/*` exist only on the `interp` batch;
-baseline runs have no `gate/*` or `delta_*`.
+target anomalies?) + `corr/anom_over_norm` (how strongly did correction concentrate on
+them — high is good under the corrected config) explains both whether and why. Note:
+`gate/*` and `corr/*` exist only on the `interp` batch; baseline runs have no `gate/*`
+or `delta_*`.
 
 ## 4. Write up the result
 
@@ -194,16 +197,20 @@ python experiments/proposals/label_stats.py --all-files   # -> dataset_sizes.md 
 python experiments/proposals/label_stats.py --plot        # per-dataset timeline PNGs (tested sets)
 ```
 
-## 5. Fail-fast decision rule
+## 5. Verdict rule
 
-Run stage1 first, read the deltas, then decide:
-- **All 3 datasets ≥ RW-1** → promote to a full (all-datasets, 200-epoch) run.
-- **Otherwise** → move on to the next proposal. (P1 lost on all 3 → we went to P2.)
+Per collection, compare the proposal's per-collection mean AUC-PR to the reproduction
+RW-1 (best-HP/200ep). A proposal "beats RW-1" on a collection when its Δ > 0. All five
+were evaluated on the verdict set + shape extension; the corrected-config outcome is in
+the summary at the top (P5+auto-λ beats RW-1 on GECCO, 6/6; no general win elsewhere).
+Deltas are config-confounded on the epoch/HP axis (proposals 100ep/default-HP vs RW-1
+best-HP/200ep), so treat magnitudes as indicative.
 
 ## 6. Add a new proposal (P2–P5)
 
 1. Write `autocegar/proposals/proposalN.py` with a `CNN_RW_CEGAR_PN` class
-   (subclass `CNN_RW_CEGAR`; expose `PROPOSAL` / `NAME`). Override only the hook
+   (P1/P2 subclass `CNN_RW_CEGAR` in `rw_cegar.py`; P3/P4/P5 subclass
+   `CNN_RW_CEGAR_HookBase` in `rw_cegar_hooks.py`; expose `PROPOSAL` / `NAME`). Override only the hook
    the proposal needs — most only touch `_compute_signals(window_resid, res_stats)`
    → `(E_t, C_t)`. Proposals that change the forward pass (e.g. P2 MC-dropout,
    P4 input-gradients) add a further hook to the base and override that too.
