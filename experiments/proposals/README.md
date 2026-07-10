@@ -7,11 +7,18 @@ disconnected, spanning the RW-vs-DeepAnT performance range). If a proposal beats
 the RW-1 baseline on all three it graduates to a full run; otherwise we move on to
 the next proposal.
 
-**Implemented:** P1 (Residual-Gated, `basic`/`selective`), P2 (Uncertainty-Aware
-MC-dropout, `mc5`/`mc10`), P3 (Correction-Consistency, full docx spec,
-`full`/`preserve_only`/`soft`). P4–P5 are reserved slots. **All lost to RW-1 at the
-collection level** (P1 0/3, P2 0/6, P3 0/3) → see `proposalN/proposalN_results.md`.
-Next: P4.
+**Implemented: all five** — P1 (Residual-Gated), P2 (Uncertainty/MC-dropout), P3
+(Correction-Consistency), P4 (Dual Residual+Gradient), P5 (Temporal-Persistence).
+
+**Result (corrected config: warm-up = plain RW-1 then gate; `correction_init='neg_x'`).**
+The earlier "0/N loss on everything" was largely a config artifact (forecaster-only
+warm-up + zero init, now archived in `_backup_oldconfig/`). Under the corrected config,
+on the verdict set (opportunity/gecco/creditcard) vs the best-HP/200ep RW-1 reproduction:
+- **P5 beats RW-1 on GECCO** — fixed 0.648, auto-λ 0.682 (RW-1 0.639); **1/3**, the only win.
+- P4 close on GECCO (0.599 / auto 0.628), P1 (0.565 / 0.618); all near-tie on OPPORTUNITY.
+- Everyone still loses on CreditCard (isolated point anomalies).
+- The delta is config-confounded on one axis (proposals 100ep/default-HP vs RW-1
+  best-HP/200ep), so it is indicative — see `proposalN/proposalN_results.md`.
 
 **Evaluation unit = whole collection.** `--dataset` accepts a raw TSB-AD-M series
 filename, so `submit_pN_coll.sh` runs one array task per series and
