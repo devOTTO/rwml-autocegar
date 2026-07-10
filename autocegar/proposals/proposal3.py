@@ -69,7 +69,7 @@ class CNN_RW_CEGAR_P3(CNN_RW_CEGAR_HookBase):
             # preserve-only ablation: isolate the write-back (no model-gradient amp)
             kwargs["lam"] = 0.0
         kwargs.setdefault("warmup_epochs", 10)
-        kwargs.setdefault("correction_init", "zero")
+        kwargs.setdefault("correction_init", "neg_x")
         super().__init__(*args, **kwargs)
         self.gamma = float(gamma)
         self.corr_q = float(corr_q)

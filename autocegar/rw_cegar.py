@@ -22,10 +22,11 @@ Wiring implemented here (previously scaffolded but unused):
                   `valley_quantile_controller` (auto-τ) run at each epoch end and
                   carry their smoothed state across epochs *and across the
                   warm-up→main phase boundary* (phase continuity).
-  * warm-up     — `warmup_epochs` trains the CNN forecaster alone (no correction,
-                  no gate) so it learns the normal dynamics first; the residual
-                  statistics keep updating during warm-up so E_t/C_t are already
-                  warm when the gate switches on.
+  * warm-up     — for `warmup_epochs`, training runs as **plain RW-1** (correction
+                  trained every epoch) with the CEGAR **gate OFF**; the gate switches
+                  on afterwards. So RW-1 settles first, then CEGAR steers it. (This is
+                  NOT forecaster-only: the correction is trained throughout, exactly
+                  like RW-1, which is why 'neg_x' init no longer causes an input jump.)
 
 Defaults reproduce the previous behaviour (`warmup_epochs=0`, `lam_mode='fixed'`,
 `tau_mode='fixed'`, `correction_init='neg_x'`).
@@ -65,9 +66,8 @@ class CNN_RW_CEGAR(CNN_RW):
         warmup_epochs      epochs of forecaster-only training before the gate /
                            correction switch on (curriculum). 0 = off.
         correction_init    'neg_x' (Algorithm-2 faithful, default) or 'zero'.
-                           With warm-up, 'zero' gives a continuous transition
-                           (the model warms up on x, then x+correction≈x); with
-                           'neg_x' the input jumps once when correction turns on.
+                           Warm-up now runs plain RW-1 (correction on), so 'neg_x'
+                           no longer causes an input jump; 'zero' remains available.
         lam_mode           'fixed' | 'auto_tr' (tail-ratio λ controller).
         tau_mode           'fixed' | 'auto_q_valley' (valley-detection τ controller).
         ratio_target, lam_max, lam_ctrl_ema   auto-λ controller knobs.
@@ -182,8 +182,9 @@ class CNN_RW_CEGAR(CNN_RW):
             warm = epoch <= self.warmup_epochs
             self.model.train(mode=True)
             avg_loss, n_batches, gate_sum = 0.0, 0, 0.0
-            if not warm:
-                self.correction_optimizer.zero_grad()
+            # correction is trained EVERY epoch (RW-1); warm-up = RW-1 with the CEGAR
+            # gate OFF, then the gate switches on after warmup_epochs.
+            self.correction_optimizer.zero_grad()
 
             # per-epoch controller accumulators
             conf_hist_accum = None
@@ -197,75 +198,63 @@ class CNN_RW_CEGAR(CNN_RW):
 
                 self.model_optimizer.zero_grad()
 
-                if warm:
-                    # ── warm-up: forecaster only, no correction / no gate ──
-                    output = self.model(x).view(-1, self.feats * self.pred_len)
-                    target_full = target.reshape(-1, self.feats * self.pred_len)
-                    B = output.shape[0]
-                    residual = (target_full - output).detach().view(B, self.feats, self.pred_len)
-                    res_stats.update(residual)  # keep signals warm for phase continuity
-                    loss = _rmse(output, target_full)
-                    loss.backward()
-                    self.model_optimizer.step()
-                    avg_loss += loss.item()
-                    n_batches += 1
-                    continue
-
-                # ── main phase: RW-1 correction + CEGAR gate ──────────────
+                # ── RW-1 correction path (x + correction) EVERY epoch ──
                 x_corr = correction[0, :, xb_idx].permute(1, 0, 2)
                 target_corr = correction[0, :, yb_idx].permute(1, 0, 2)
-
                 output = self.model(x + x_corr).view(-1, self.feats * self.pred_len)
                 target_full = (target + target_corr).reshape(-1, self.feats * self.pred_len)
-
                 B = output.shape[0]
                 residual = (target_full - output).detach().view(B, self.feats, self.pred_len)
                 window_resid = res_stats.update(residual)                 # [B]
-                E_t, confidence = self._compute_signals(
-                    window_resid, res_stats, x + x_corr, target_full)  # [B], [B]
-
-                # canonical gate() -> per-window scale + control stats
-                scale, stats = compute_gate(
-                    confidence=confidence, wrongness=E_t, lam=self.lam,
-                    scale_normalize=self.scale_normalize, detach_gates=True,
-                    minimal_stats=True)
-                g_win = (E_t * confidence).clamp(0.0, 1.0).detach()  # [B] per-window gate
-                gate_sum += float(g_win.mean().item())
-                if epoch == self.epochs:  # record per-timestep gate in the final epoch
-                    tgt = np.asarray(yb_idx).reshape(-1)
-                    np.add.at(gate_accum, tgt, np.repeat(g_win.cpu().numpy(), self.pred_len))
-                    np.add.at(gate_count, tgt, 1.0)
-
-                # ── gate applied to the per-window RMSE GRADIENT (ScaleGrad),
-                #    not the loss value: reported loss stays the true RMSE. ──
                 per_window_rmse = torch.sqrt(
                     torch.nn.functional.mse_loss(output, target_full, reduction="none").mean(dim=1))
-                loss = ScaleGrad.apply(per_window_rmse, scale).mean()
-                loss.backward()  # correction grad of gated windows is up-weighted
 
+                if warm:
+                    # ── warm-up = plain RW-1 (gate OFF, correction trained normally) ──
+                    loss = per_window_rmse.mean()
+                else:
+                    # ── main phase: CEGAR gate ON ──
+                    E_t, confidence = self._compute_signals(
+                        window_resid, res_stats, x + x_corr, target_full)  # [B], [B]
+                    scale, stats = compute_gate(
+                        confidence=confidence, wrongness=E_t, lam=self.lam,
+                        scale_normalize=self.scale_normalize, detach_gates=True,
+                        minimal_stats=True)
+                    g_win = (E_t * confidence).clamp(0.0, 1.0).detach()  # [B] per-window gate
+                    gate_sum += float(g_win.mean().item())
+                    if epoch == self.epochs:  # record per-timestep gate in the final epoch
+                        tgt = np.asarray(yb_idx).reshape(-1)
+                        np.add.at(gate_accum, tgt, np.repeat(g_win.cpu().numpy(), self.pred_len))
+                        np.add.at(gate_count, tgt, 1.0)
+                    # gate applied to the per-window RMSE GRADIENT via ScaleGrad
+                    # (reported loss stays the true RMSE)
+                    loss = ScaleGrad.apply(per_window_rmse, scale).mean()
+
+                loss.backward()
                 self.model_optimizer.step()
                 avg_loss += loss.item()
                 n_batches += 1
 
-                # accumulate controller inputs
-                self._gate_mean_ema = update_ema(self._gate_mean_ema, stats["gate_mean"], self.lam_ctrl_ema)
-                self._gate_p99_ema = update_ema(self._gate_p99_ema, stats["gate_p99"], self.lam_ctrl_ema)
-                ch = stats.get("_conf_hist")
-                if ch is not None:
-                    if conf_hist_accum is None:
-                        conf_hist_accum = list(ch)
-                    else:
-                        conf_hist_accum = [a + b for a, b in zip(conf_hist_accum, ch)]
+                if not warm:
+                    # accumulate controller inputs
+                    self._gate_mean_ema = update_ema(self._gate_mean_ema, stats["gate_mean"], self.lam_ctrl_ema)
+                    self._gate_p99_ema = update_ema(self._gate_p99_ema, stats["gate_p99"], self.lam_ctrl_ema)
+                    ch = stats.get("_conf_hist")
+                    if ch is not None:
+                        if conf_hist_accum is None:
+                            conf_hist_accum = list(ch)
+                        else:
+                            conf_hist_accum = [a + b for a, b in zip(conf_hist_accum, ch)]
 
+            # ── L1 outlier penalty + epoch-wise correction step (RW-1, every epoch) ──
+            l1_loss = self.l1_weight * torch.norm(correction, p=1)
+            l1_loss.backward()
+            if correction.grad is not None:
+                correction.grad = self._grad_activation(correction.grad)
+                self.correction_optimizer.step()
+
+            # ── controllers only once the gate is active (main phase) ──
             if not warm:
-                # ── L1 outlier penalty + epoch-wise correction step (RW-1) ──
-                l1_loss = self.l1_weight * torch.norm(correction, p=1)
-                l1_loss.backward()
-                if correction.grad is not None:
-                    correction.grad = self._grad_activation(correction.grad)
-                    self.correction_optimizer.step()
-
-                # ── controllers (epoch end); state carried to next epoch ──
                 if self.lam_mode == "auto_tr":
                     self._lam_smooth, _ = tail_ratio_lambda_controller(
                         self._gate_mean_ema, self._gate_p99_ema,
@@ -278,8 +267,6 @@ class CNN_RW_CEGAR(CNN_RW):
                     if info.get("valley_bin") is not None:
                         # map the chosen quantile back to a residual threshold
                         self.tau = res_stats.quantile(self._tau_q)
-            else:
-                l1_loss = torch.tensor(0.0)
 
             avg_loss /= max(n_batches, 1)
             phase = "warmup" if warm else "main"

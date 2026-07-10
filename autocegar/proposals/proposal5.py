@@ -40,7 +40,7 @@ class CNN_RW_CEGAR_P5(CNN_RW_CEGAR_HookBase):
     def __init__(self, *args, q_e=0.8, persist_h=5, k_p=5.0, tau_p=0.5,
                  persist_alpha=0.9, **kwargs):
         kwargs.setdefault("warmup_epochs", 10)
-        kwargs.setdefault("correction_init", "zero")
+        kwargs.setdefault("correction_init", "neg_x")
         super().__init__(*args, **kwargs)
         self.q_e = float(q_e)
         self.persist_h = int(persist_h)

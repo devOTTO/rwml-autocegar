@@ -18,9 +18,9 @@ is recorded by the base for interpretability. Only `_compute_signals` is overrid
 **Stage-1: amplification only.** The docx's normalized, correctable-point write-back
 (`C <- C - eta_C * g * grad/||grad||`) is NOT implemented; the amplified correction
 gradient already concentrates on high-(residual*correctability) windows. `correction_init`
-is 'zero' to match P1/P2/P3/P5 (same config across the proposal set). Known minor: the
-input-gradient forward runs with the model in train mode, so dropout (if any) adds a
-little noise to h_t.
+is 'neg_x' (RW-1-faithful) like P1/P2/P3/P5; warm-up runs plain RW-1 so no input jump.
+Known minor: the input-gradient forward runs with the model in train mode, so dropout
+(if any) adds a little noise to h_t.
 """
 import numpy as np
 import torch
@@ -52,7 +52,7 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
     def __init__(self, *args, k_r=1.0, tau_r=2.0, k_h=1.0, tau_h=0.0,
                  use_benefit=False, eta_x=0.1, **kwargs):
         kwargs.setdefault("warmup_epochs", 10)
-        kwargs.setdefault("correction_init", "zero")    # match P1/P2/P3/P5 (same config)
+        kwargs.setdefault("correction_init", "neg_x")    # RW-1-faithful (warm-up runs plain RW-1)
         super().__init__(*args, **kwargs)
         self.k_r = float(k_r)
         self.tau_r = float(tau_r)

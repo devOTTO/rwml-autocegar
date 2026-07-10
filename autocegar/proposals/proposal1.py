@@ -50,7 +50,7 @@ class CNN_RW_CEGAR_P1(CNN_RW_CEGAR):
         tau        robust-z threshold for the wrongness sigmoid (default 2.0).
         k          gate sigmoid sharpness / "augmenting factor" (default 1.0).
         warmup_epochs   forecaster-only warm-up (default 10; week-8 said 10-15).
-        correction_init 'zero' (smooth transition after warm-up; default here).
+        correction_init 'neg_x' (Algorithm-2-faithful; warm-up runs plain RW-1).
     All other base knobs (lam, lam_mode/tau_mode controllers, scale_normalize,
     l1_weight, ...) keep their base defaults and can still be overridden.
     """
@@ -63,7 +63,7 @@ class CNN_RW_CEGAR_P1(CNN_RW_CEGAR):
         kwargs.setdefault("tau", 2.0)             # robust-z units (tau_e), not residual-EMA
         kwargs.setdefault("k", 1.0)               # gentle sigmoid in z-space (k_e)
         kwargs.setdefault("warmup_epochs", 10)
-        kwargs.setdefault("correction_init", "zero")
+        kwargs.setdefault("correction_init", "neg_x")
         kwargs.setdefault("scale_normalize", True)  # docx: s_t = (1+lam*g)/mean(1+lam*g)
         super().__init__(*args, **kwargs)
         if conf_mode not in ("basic", "quantile"):

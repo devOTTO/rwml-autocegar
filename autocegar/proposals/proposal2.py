@@ -46,7 +46,7 @@ class CNN_RW_CEGAR_P2(CNN_RW_CEGAR):
         k_u         k_c — confidence sigmoid sharpness (defaults to k when unset).
         unc_eps     ε — stabilizer in the wrongness denominator (u_t + ε).
     Reused-with-P2-defaults: tau (τ_e, residual/uncertainty-ratio threshold), k
-        (k_e), warmup_epochs (10), correction_init ('zero'), scale_normalize (True).
+        (k_e), warmup_epochs (10), correction_init ('neg_x'), scale_normalize (True).
     """
 
     PROPOSAL = 2
@@ -57,7 +57,7 @@ class CNN_RW_CEGAR_P2(CNN_RW_CEGAR):
         kwargs.setdefault("tau", 2.0)
         kwargs.setdefault("k", 1.0)
         kwargs.setdefault("warmup_epochs", 10)
-        kwargs.setdefault("correction_init", "zero")
+        kwargs.setdefault("correction_init", "neg_x")
         kwargs.setdefault("scale_normalize", True)
         super().__init__(*args, **kwargs)
         self.mc_samples = int(mc_samples)
