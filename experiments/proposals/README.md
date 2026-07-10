@@ -18,7 +18,7 @@ on the verdict set (opportunity/gecco/creditcard) vs the best-HP/200ep RW-1 repr
 - P4 close on GECCO (0.599 / auto 0.628), P1 (0.565 / 0.618); all near-tie on OPPORTUNITY.
 - Everyone still loses on CreditCard (isolated point anomalies).
 - The delta is config-confounded on one axis (proposals 100ep/default-HP vs RW-1
-  best-HP/200ep), so it is indicative — see `results/proposalN_results.md`.
+  best-HP/200ep), so it is indicative — see `docs/proposalN_results.md`.
 
 **Evaluation unit = whole collection.** `--dataset` accepts a raw TSB-AD-M series
 filename, so `submit_pN_coll.sh` runs one array task per series and
@@ -27,7 +27,7 @@ compares against the reproduction RW-1 / DeepAnT per-collection means (reference
 The single-`--dataset` / `all` mode remains for quick one-series screens.
 
 Layout of `experiments/proposals/`:
-- **`results/`** — the read docs: `SUMMARY.md` (cross-proposal), `proposalN_results.md`
+- **`docs/`** — the read docs: `SUMMARY.md` (cross-proposal), `proposalN_results.md`
   (×5), `collection_table_pN.md` (×5). **Start here.**
 - **`runs/`** — all grids (`*_grid.txt`) + SLURM submit scripts (`submit_*.sh`).
 - **(root, tools)** — `aggregate_collection.py`, `aggregate_sweep.py`, `aggregate_ab.py`,
