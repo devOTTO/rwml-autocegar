@@ -25,7 +25,9 @@ Verdict set only (opportunity 8 + gecco 1 + creditcard 1 = 10 series), `epochs=1
 = reproduction per-collection means (reference, best-HP/200ep). Three variants:
 `full` (amp+preserve, docx default), `preserve_only` (λ=0, write-back isolated),
 `full@auto-λ` (`lam_mode=auto_tr`, the auto-tuning ablation). auto-τ is N/A (P3 does
-not use the residual τ). Score = mean|correction| (same as RW-1, for a fair delta).
+not use the residual τ). Score = mean|correction| (same as RW-1). **Note the delta is
+config-confounded**: the proposals run default-HP / 100ep, the RW-1 baseline is
+best-HP / 200ep, so it is indicative — not a clean isolation of the gate's effect.
 
 **Cost** (gecco, 100 epochs, GPU wall-clock; indicative, single no-seed run):
 P1 5:05 (1.0×) · P2 6:02 (1.19×) · **P3 6:44 (1.32×)**. P3 is the most expensive of
@@ -69,10 +71,12 @@ docx leaves open resolves to "both negligible here".
   signal is real.
 - **Preserve behaves as designed**: on GECCO correction concentrates on anomalies
   (corr@anom/norm 2.7×, covering 53%). It is NOT erased.
-- **Yet AUC-PR still collapses** (GECCO 0.227 vs RW-1 0.639). Preserving the correction
-  does not rescue the score, because plain RW-1 (no gate) already produces the best
-  mean|correction| separation on these collections — any CEGAR gating, amplify (P1) or
-  preserve (P3), only degrades it.
+- **Yet AUC-PR still falls short** (GECCO 0.227 vs the best-HP/200ep RW-1 0.639).
+  Preserving the correction does not lift P3 to the RW-1 ceiling. We do NOT claim the
+  gate itself degrades RW-1: proposal and baseline differ in config (default-HP/100ep
+  vs best-HP/200ep) and no matched-config gate-off control was run, so the gap mixes
+  gate effect and config effect. What is supported is only that P3-as-configured does
+  not reach the tuned RW-1 baseline.
 - **P3 is actually worse than P1 on GECCO** (0.227 vs P1's 0.486; both < RW-1 0.639).
   P1's aggressive gating drove a higher anomaly-vs-normal correction ratio (5.3× vs
   P3's 2.7×). A higher such ratio *coincides* with a higher AUC-PR here, but note
@@ -86,10 +90,11 @@ docx leaves open resolves to "both negligible here".
 
 ## Decision
 **Fail-fast → Proposal 4 (Dual-Gate Residual-and-Gradient RW-CEGAR).** P3, the
-correction-consistency preserve, does not beat RW-1 on any verdict collection, and the
-preserve mechanism — though it works mechanically — does not address the core RW-CEGAR
-failure: gating the correction (in any direction) reduces the mean|correction| contrast
-that RW-1 already maximises ungated.
+correction-consistency preserve, does not reach the best-HP/200ep RW-1 baseline on any
+verdict collection, and the preserve mechanism — though it works mechanically (it
+localizes and keeps correction on anomalies) — does not close that gap. Whether the
+gate itself helps or hurts at matched config is out of scope: no gate-off control was
+run and the delta vs the tuned RW-1 baseline is config-confounded.
 
 ## Reproduce
 ```bash
