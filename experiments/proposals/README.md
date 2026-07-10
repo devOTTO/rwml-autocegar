@@ -146,6 +146,11 @@ Run types: `P{N}-{variant}-{dataset}-...` (proposal), `RW1-baseline-...` (baseli
 - **`corr/anom_over_norm`** — how many × more correction lands on anomalies
   (**high = it is erasing the anomalies → the P1 risk**).
 - `corr/anom_mean`, `corr/norm_mean` — correction magnitude, anomaly vs normal.
+- `corr/overlap` — of high-correction steps (|corr| above its `corr_q` quantile),
+  fraction that are anomalies (correction **precision**, Baldo thesis Sec. 8.4).
+- `corr/anomaly_coverage` — of anomaly steps, fraction that get a high correction
+  (correction **recall**, Sec. 8.4).
+- `corr/tau_c_q95` — the |correction| threshold (q95) used for the two above.
 - `gate/trigger_frac` — fraction of the timeline gated; `gate/trigger_count` — how many steps.
 - `gate/trigger_precision` — of gated steps, fraction that are anomalies.
 - `gate/trigger_recall` — of anomaly steps, fraction gated.
