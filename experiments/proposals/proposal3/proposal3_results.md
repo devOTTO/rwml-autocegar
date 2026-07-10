@@ -17,7 +17,7 @@ g     = σ(k_d·(d−τ_d)/sd) · σ(k_v·(v−τ_v)),  τ_d = Q_corr_q(d)   # E
 Both docx mechanisms are on: (1) gradient amplification — the previous-epoch gate drives
 the per-window ScaleGrad path (scale = 1+λ·g); (2) preserve write-back — the epoch-wise
 RW step is suppressed on those points, `grad_C·(1−γ·g)` (docx "more safely" variant).
-Implemented on a dedicated base (`rw_cegar_p3.py`) so the P1/P2 base stays clean.
+Implemented on a dedicated base (`rw_cegar_hooks.py`) so the P1/P2 base stays clean.
 
 ## Methodology (collection-level)
 Verdict set only (opportunity 8 + gecco 1 + creditcard 1 = 10 series), `epochs=100`,

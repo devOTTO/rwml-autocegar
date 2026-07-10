@@ -20,7 +20,7 @@ compares against the reproduction RW-1 / DeepAnT per-collection means (reference
 The single-`--dataset` / `all` mode remains for quick one-series screens.
 
 - Model code:     `autocegar/proposals/proposalN.py` (+ registry in `__init__.py`;
-                  P3 has its own base `autocegar/rw_cegar_p3.py`).
+                  P3/P4/P5 share the hooks base `autocegar/rw_cegar_hooks.py`).
 - Runner:         `run_proposal.py` (repo root)
 - Per-proposal:   `experiments/proposals/proposalN/` — grids (`pN_*_grid.txt`),
                   submit scripts (`submit_pN*.sh`), `collection_table_pN.md`, and

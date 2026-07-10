@@ -1,8 +1,13 @@
-"""RW-1 + CEGAR base — DEDICATED COPY for Proposal 3 (kept separate from the
-P1/P2 base ``rw_cegar.py`` on purpose: P3 needs the ``_writeback_scale`` hook and
-the per-window target-index stash, and duplicating the trainer keeps the P1/P2
-base clean and easy to read). Any P1/P2 change to ``rw_cegar.py`` that P3 should
-also get must be mirrored here manually.
+"""RW-1 + CEGAR base with correction-hooks — SHARED by the proposals that steer the
+correction per-timestep: **P3** (consistency preserve), **P4** (dual residual+gradient
+gate + write-back), **P5** (temporal-persistence). It adds two things the plain P1/P2
+base lacks: the ``_writeback_scale`` hook (scale the epoch-wise correction gradient
+before the RW step) and a per-window target-index stash (``_cur_yb_idx``) so a proposal
+can map a per-timestep signal onto per-window wrongness.
+
+**P1/P2 use the plain base ``rw_cegar.py``** (kept clean, unaware of these hooks). This
+file is a deliberate copy of that trainer + the hooks; any P1/P2 change to
+``rw_cegar.py`` that P3/P4/P5 should also get must be mirrored here manually.
 
 RW-1 + CEGAR — the AutoCEGAR trainer built on the *reproduction-successful*
 RW-1 (paper Algorithm 2) rather than the old standalone DeepAnT track.
@@ -59,7 +64,7 @@ from autocegar.controllers import (
 )
 
 
-class CNN_RW_CEGAR_P3Base(CNN_RW):
+class CNN_RW_CEGAR_HookBase(CNN_RW):
     """RW-1 with a CEGAR gate steering the correction gradient.
 
     Extra hyperparameters beyond CNN_RW:
@@ -177,7 +182,7 @@ class CNN_RW_CEGAR_P3Base(CNN_RW):
         return grad
 
     def fit(self, data, train_idx=None):
-        print(f"Training CNN_RW_CEGAR_P3 (RW-1 + correction-consistency) | warmup={self.warmup_epochs} "
+        print(f"Training CNN_RW_CEGAR (RW-1 + correction hooks) | warmup={self.warmup_epochs} "
               f"| lam_mode={self.lam_mode} | tau_mode={self.tau_mode} "
               f"| correction_init={self.correction_init}...")
         ts = self._normalize(data)

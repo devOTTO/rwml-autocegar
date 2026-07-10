@@ -39,15 +39,14 @@ preserve write-back) are overridden; `fit` exposes the consistency gate as
 import numpy as np
 import torch
 
-# P3 uses its OWN dedicated base (rw_cegar_p3.py), a copy of the P1/P2 base with the
-# _writeback_scale hook + per-window target-index stash. The P1/P2 base (rw_cegar.py)
-# is kept clean and unaware of P3.
-from autocegar.rw_cegar_p3 import CNN_RW_CEGAR_P3Base
+# P3/P4/P5 share the hooks base (rw_cegar_hooks.py): P1/P2 base + _writeback_scale
+# hook + per-window target-index stash. The P1/P2 base (rw_cegar.py) stays clean.
+from autocegar.rw_cegar_hooks import CNN_RW_CEGAR_HookBase
 
 _EPS = 1e-8
 
 
-class CNN_RW_CEGAR_P3(CNN_RW_CEGAR_P3Base):
+class CNN_RW_CEGAR_P3(CNN_RW_CEGAR_HookBase):
     """Proposal 3 = (correction-magnitude x direction-stability) gate, driving BOTH
     gradient amplification and a preserve (suppress) write-back.
 
