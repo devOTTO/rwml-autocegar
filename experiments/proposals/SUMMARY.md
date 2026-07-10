@@ -51,16 +51,42 @@ consistent win, not no-seed noise.
 P5 has the best gate localization (0.945) and correction concentration/coverage on GECCO —
 consistent with it being the one that wins.
 
-## Shape-spectrum extension (TAO/PSM/MSL/SWaT) — IN PROGRESS
-Testing whether the pattern is shape-dependent (P5 wins on block, loses on point/mixed).
-Partial (P1 done):
-- **MSL** (block, RW-1 weak 0.131): **P1 = 0.136 → beats.** ← block + beatable baseline
-- **TAO** (point, RW-1 0.995): P1 = 0.995 tie (both ~perfect).
-- **PSM** (mixed): P1 0.125 vs 0.137 (close).
-- P2–P5 shape runs still queued; table to be completed.
+## Shape-spectrum extension (AUC-PR; fixed / auto-λ; **W** = beats RW-1)
+P1-P5 × 4 collections chosen to span the anomaly-shape axes.
 
-## Decision (interim)
-The corrected config overturns the old "gating never helps" reading: proposals are
-competitive, and **P5+auto-λ genuinely beats the tuned RW-1 on GECCO (block)**. The open
-question — does P5 win on block anomalies generally (GECCO/MSL/SWaT) but not point/mixed
-(TAO/PSM)? — is being answered by the shape extension.
+| proposal | TAO (point, RW-1 0.995) | PSM (mixed, RW-1 0.137) | MSL (block, RW-1 0.131) | SWaT (block, RW-1 0.444) |
+|---|:--:|:--:|:--:|:--:|
+| DeepAnT* | 0.996 | 0.407 | 0.116 | 0.516 |
+| P1 | 0.995 / 0.995 **W** | 0.125 / 0.126 | **0.136 W** / 0.118 | 0.139 / 0.131 |
+| P2 | 0.995 / 0.995 **W** | 0.116 / 0.115 | **0.135 W / 0.134 W** | 0.133 / 0.136 |
+| P3 | 0.996 / 0.996 **W** | 0.118 / 0.118 | 0.128 / 0.130 | 0.141 / 0.143 |
+| P4 | 0.995 / 0.995 | 0.125 / 0.128 | 0.122 / 0.121 | 0.143 / 0.149 |
+| P5 | 0.996 / 0.995 **W** | 0.124 / 0.130 | **0.137 W** / 0.130 | 0.141 / 0.154 |
+
+**The "P5 = block-anomaly method" hypothesis is NOT supported.** There is no clean
+shape→win rule:
+- **TAO** (point): everyone ≈ 0.995 = RW-1 — a trivial tie (both saturate on easy point
+  anomalies), not a meaningful win.
+- **MSL** (block, weak RW-1 0.131): P1/P2/P5 edge above by ~0.005 — margins at the
+  no-seed noise level, not a confirmed win.
+- **SWaT** (block, strong RW-1 0.444): **everyone collapses to ~0.13–0.15** — a heavy
+  loss on a block collection, directly contradicting "P5 wins on block".
+- **PSM** (mixed): all slightly below RW-1.
+
+So P5 does **not** win on block in general (it loses SWaT badly and near-ties OPPORTUNITY);
+its GECCO win does not generalize to a shape rule.
+
+## Decision (final)
+1. **The corrected config overturns the old "gating never helps" verdict** — the earlier
+   0/N was largely a forecaster-only-warm-up + zero-init artifact; with warm-up = plain
+   RW-1 then gate (neg_x), all proposals are competitive with the tuned RW-1.
+2. **P5 + auto-λ robustly beats the best-HP/200ep RW-1 on GECCO** (6/6 runs, min 0.661 >
+   0.639) — a genuine, reproducible win.
+3. **But it does not generalize**: across the shape spectrum there is no consistent
+   pattern (SWaT block lost, MSL win within noise, point/mixed ≈ or below RW-1). The win
+   is GECCO-specific, not a shape-driven method advantage.
+4. **Caveat**: all deltas are still config-confounded on the epoch/HP axis (proposals
+   100ep/default-HP vs RW-1 best-HP/200ep), so they are indicative.
+
+**Net**: a scoped positive result (P5+auto beats tuned RW-1 on GECCO) on top of a
+corrected-config negative-results arc (no general win across shapes/collections).
