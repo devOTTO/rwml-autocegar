@@ -10,7 +10,9 @@ overrides only the wrongness / confidence signals:
   variant only switches C_t; τ and λ are variant-independent.
 - **Gate** `g = E_t·C_t`, **scale** `s = (1+λg)/mean(1+λg)`, applied to the
   per-window forecasting-loss **gradient** via `ScaleGrad` (loss value unchanged).
-- Anomaly score = `mean|correction|` (same as RW-1, for a fair delta).
+- Anomaly score = `mean|correction|` (same as RW-1). Note the Δ vs the RW-1 baseline
+  is **config-confounded** (P1 default-HP/100ep vs baseline best-HP/200ep) — indicative,
+  not a clean isolation of the gate.
 
 ## Methodology (collection-level)
 Fixed config: `epochs=100`, `warmup=10`, `window=50`, `batch=256`, `l1_weight=0.001`,
@@ -56,9 +58,11 @@ DeepAnT is strongest on opportunity/creditcard, RW-1 on gecco; P1 is never best.
 | OPPORTUNITY | 0.48 | 0.98 | 0.070 | 0.055 |
 
 On GECCO the gate localizes anomalies (AUC 0.90) and correction concentrates there
-(5.3×, covering 82% of anomalies) — P1 "corrects the anomalies away," which is why
-its highest-signal collection loses the most. On opportunity the gate is
-uninformative (AUC 0.48).
+(5.3×, covering 82% of anomalies) — an observed mechanism (the gate does target
+anomalies and keep correction on them). Its highest-signal collection also shows the
+largest gap to the best-HP RW-1, but that gap is config-confounded (see Methodology),
+so we describe the mechanism without claiming it is the cause of the loss. On
+opportunity the gate is uninformative (AUC 0.48).
 
 ## Interpretability (why it fails)
 Matches the risk the proposal flagged: the gate correctly localizes anomalies
