@@ -64,7 +64,7 @@ docx leaves open resolves to "both negligible here".
 | CreditCard | 0.563 | 1.00 | 0.002 | 0.045 |
 | OPPORTUNITY | 0.537 | 0.96 | 0.045 | 0.039 |
 
-## Interpretability — the preserve mechanism works, but does not help
+## Interpretability — the preserve mechanism works, but does not reach the tuned baseline
 - **The gate localizes anomalies well** on GECCO (gate→label AUC **0.88**, ~P1's 0.90)
   and — unlike P2 — even on opportunity/creditcard it is above random (0.54–0.56),
   because the direction-stability term filters noise. So the correction-consistency
@@ -83,10 +83,10 @@ docx leaves open resolves to "both negligible here".
   AUC-PR is a ranking metric, so this is a suggestive association, not a proven
   monotonic law. The "erase is the problem" story is thus incomplete: gating the
   correction (amplify or preserve) does not beat the best-HP RW-1 reproduction (the
-  documented baseline, `rw/reproduction/summary_rw1_besthp.csv`). This suggests RW-1's
-  ungated correction pattern is already near-optimal on these collections, but we did
-  not measure the reproduction RW-1's own corr@anom/norm, so this is an interpretation,
-  not a proven claim.
+  documented baseline, `rw/reproduction/summary_rw1_besthp.csv`). Assessing whether the
+  gate helps at matched config would need a same-config gate-off control, which we did
+  not run — so we make no claim about the gate's effect, only that P3-as-configured
+  does not reach the tuned RW-1 baseline.
 
 ## Decision
 **Fail-fast → Proposal 4 (Dual-Gate Residual-and-Gradient RW-CEGAR).** P3, the
