@@ -28,6 +28,13 @@ import matplotlib
 matplotlib.use("Agg")
 import matplotlib.pyplot as plt
 
+# Larger base fonts so the text stays legible when the PNG is downscaled to fit
+# a markdown/README column (the raw figure is rendered at high dpi below).
+plt.rcParams.update({
+    "font.size": 14, "axes.titlesize": 15, "axes.labelsize": 14,
+    "legend.fontsize": 12, "xtick.labelsize": 12, "ytick.labelsize": 12,
+})
+
 from autocegar.proposals import build_model
 from run_proposal import load_dataset, DATASETS
 
@@ -73,7 +80,7 @@ def full_timeline(ax, label, a, b):
     ax.axvspan(a, b, color="#1f77b4", alpha=0.18, lw=0)   # the zoom window
     ax.set_xlim(0, len(y))
     ax.set_yticks([])
-    ax.set_ylabel("all\nanomalies", fontsize=8)
+    ax.set_ylabel("all\nanomalies", fontsize=11)
 
 
 def make_figure(proposal, dataset, variant, epochs, warmup, tau, lam, pad, wandb_log):
@@ -96,7 +103,7 @@ def make_figure(proposal, dataset, variant, epochs, warmup, tau, lam, pad, wandb
     print(f"[{dataset}] feature {f} (most corrected), window [{a}:{b}]", flush=True)
 
     # 3 panels: (0) full-series anomaly structure, (1) orig vs corrected, (2) gate/|corr|
-    fig, (ax0, ax1, ax2) = plt.subplots(3, 1, figsize=(11, 7),
+    fig, (ax0, ax1, ax2) = plt.subplots(3, 1, figsize=(13, 8.5),
                                         gridspec_kw={"height_ratios": [0.5, 2, 1]})
     full_timeline(ax0, label, a, b)
     ax0.set_title(f"P{proposal}-{variant} on {dataset}: anomaly structure (top) + "
@@ -106,19 +113,19 @@ def make_figure(proposal, dataset, variant, epochs, warmup, tau, lam, pad, wandb
     ax1.plot(t, corrected[f, a:b], color="#ff7f0e", lw=1.1, label="corrected x + correction")
     shade_anomalies(ax1, label, a, b)
     ax1.set_ylabel(f"feature {f} (normalized)")
-    ax1.legend(loc="upper right", fontsize=9)
+    ax1.legend(loc="upper right", fontsize=12)
 
     ax2.plot(t, gate[a:b], color="#2ca02c", lw=1.1, label="gate activation")
     ax2.plot(t, scores[a:b], color="#9467bd", lw=1.0, label="|correction| (score)")
     shade_anomalies(ax2, label, a, b)
     ax2.set_ylabel("gate / |corr|")
     ax2.set_xlabel("time")
-    ax2.legend(loc="upper right", fontsize=9)
+    ax2.legend(loc="upper right", fontsize=12)
     fig.tight_layout()
 
     os.makedirs(FIG_DIR, exist_ok=True)
     out = os.path.join(FIG_DIR, f"P{proposal}_{variant}_{dataset}_correction_example.png")
-    fig.savefig(out, dpi=140)
+    fig.savefig(out, dpi=200)
     plt.close(fig)
     print(f"[{dataset}] saved -> {out}", flush=True)
 

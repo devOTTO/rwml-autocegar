@@ -49,6 +49,42 @@ pair nets out roughly neutral. Near-ties RW-1 on opportunity.
 ## Decision
 Does not beat tuned RW-1 → move to Proposal 4.
 
+## Correction examples
+
+Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+
+### Verdict collections
+
+**GECCO (block) — the win**
+
+![P3 GECCO (block) — the win correction example](../figures/P3_full_gecco_correction_example.png)
+
+**OPPORTUNITY (block)**
+
+![P3 OPPORTUNITY (block) correction example](../figures/P3_full_opportunity_correction_example.png)
+
+**CreditCard (point)**
+
+![P3 CreditCard (point) correction example](../figures/P3_full_creditcard_correction_example.png)
+
+### Shape extension
+
+**TAO (point)**
+
+![P3 TAO (point) correction example](../figures/P3_full_116_TAO_id_1_Environment_tr_500_1st_3.csv_correction_example.png)
+
+**PSM (mixed)**
+
+![P3 PSM (mixed) correction example](../figures/P3_full_115_PSM_id_1_Facility_tr_50000_1st_129872.csv_correction_example.png)
+
+**MSL (block)**
+
+![P3 MSL (block) correction example](../figures/P3_full_002_MSL_id_1_Sensor_tr_500_1st_900.csv_correction_example.png)
+
+**SWaT (block)**
+
+![P3 SWaT (block) correction example](../figures/P3_full_171_SWaT_id_1_Sensor_tr_3749_1st_9522.csv_correction_example.png)
+
 ## Reproduce
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate

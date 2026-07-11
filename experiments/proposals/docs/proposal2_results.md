@@ -49,6 +49,56 @@ Confirms the docx MC-dropout-miscalibration risk.
 ## Decision
 Does not beat tuned RW-1; weakest gate → move to Proposal 3.
 
+## Correction examples
+
+Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+
+### Verdict collections
+
+**GECCO (block) — the win**
+
+![P2 GECCO (block) — the win correction example](../figures/P2_mc5_gecco_correction_example.png)
+
+**OPPORTUNITY (block)**
+
+![P2 OPPORTUNITY (block) correction example](../figures/P2_mc5_opportunity_correction_example.png)
+
+**CreditCard (point)**
+
+![P2 CreditCard (point) correction example](../figures/P2_mc5_creditcard_correction_example.png)
+
+### Shape extension
+
+**TAO (point)**
+
+![P2 TAO (point) correction example](../figures/P2_mc5_116_TAO_id_1_Environment_tr_500_1st_3.csv_correction_example.png)
+
+**PSM (mixed)**
+
+![P2 PSM (mixed) correction example](../figures/P2_mc5_115_PSM_id_1_Facility_tr_50000_1st_129872.csv_correction_example.png)
+
+**MSL (block)**
+
+![P2 MSL (block) correction example](../figures/P2_mc5_002_MSL_id_1_Sensor_tr_500_1st_900.csv_correction_example.png)
+
+**SWaT (block)**
+
+![P2 SWaT (block) correction example](../figures/P2_mc5_171_SWaT_id_1_Sensor_tr_3749_1st_9522.csv_correction_example.png)
+
+### Characterization set
+
+**SMAP (point)**
+
+![P2 SMAP (point) correction example](../figures/P2_mc5_smap_correction_example.png)
+
+**SMD (neutral)**
+
+![P2 SMD (neutral) correction example](../figures/P2_mc5_smd_correction_example.png)
+
+**MITDB (periodic)**
+
+![P2 MITDB (periodic) correction example](../figures/P2_mc5_mitdb_correction_example.png)
+
 ## Reproduce
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate

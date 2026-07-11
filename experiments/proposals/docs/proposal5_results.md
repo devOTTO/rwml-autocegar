@@ -61,6 +61,42 @@ is a genuine, reproducible win over tuned RW-1 on GECCO. It does not generalize 
 lost, MSL within noise, point/mixed ≈/below RW-1); deltas config-confounded (epoch/HP).
 Net: a scoped positive (GECCO) on a corrected-config negative-results arc.
 
+## Correction examples
+
+Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+
+### Verdict collections
+
+**GECCO (block) — the win**
+
+![P5 GECCO (block) — the win correction example](../figures/P5_h5_gecco_correction_example.png)
+
+**OPPORTUNITY (block)**
+
+![P5 OPPORTUNITY (block) correction example](../figures/P5_h5_opportunity_correction_example.png)
+
+**CreditCard (point)**
+
+![P5 CreditCard (point) correction example](../figures/P5_h5_creditcard_correction_example.png)
+
+### Shape extension
+
+**TAO (point)**
+
+![P5 TAO (point) correction example](../figures/P5_h5_116_TAO_id_1_Environment_tr_500_1st_3.csv_correction_example.png)
+
+**PSM (mixed)**
+
+![P5 PSM (mixed) correction example](../figures/P5_h5_115_PSM_id_1_Facility_tr_50000_1st_129872.csv_correction_example.png)
+
+**MSL (block)**
+
+![P5 MSL (block) correction example](../figures/P5_h5_002_MSL_id_1_Sensor_tr_500_1st_900.csv_correction_example.png)
+
+**SWaT (block)**
+
+![P5 SWaT (block) correction example](../figures/P5_h5_171_SWaT_id_1_Sensor_tr_3749_1st_9522.csv_correction_example.png)
+
 ## Reproduce
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate

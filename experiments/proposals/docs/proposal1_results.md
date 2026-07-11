@@ -51,6 +51,56 @@ opportunity (0.48) yet near-ties RW-1. Point anomalies (creditcard) stay weak.
 ## Decision
 Competitive but does not beat tuned RW-1 → move to Proposal 2.
 
+## Correction examples
+
+Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+
+### Verdict collections
+
+**GECCO (block) — the win**
+
+![P1 GECCO (block) — the win correction example](../figures/P1_basic_gecco_correction_example.png)
+
+**OPPORTUNITY (block)**
+
+![P1 OPPORTUNITY (block) correction example](../figures/P1_basic_opportunity_correction_example.png)
+
+**CreditCard (point)**
+
+![P1 CreditCard (point) correction example](../figures/P1_basic_creditcard_correction_example.png)
+
+### Shape extension
+
+**TAO (point)**
+
+![P1 TAO (point) correction example](../figures/P1_basic_116_TAO_id_1_Environment_tr_500_1st_3.csv_correction_example.png)
+
+**PSM (mixed)**
+
+![P1 PSM (mixed) correction example](../figures/P1_basic_115_PSM_id_1_Facility_tr_50000_1st_129872.csv_correction_example.png)
+
+**MSL (block)**
+
+![P1 MSL (block) correction example](../figures/P1_basic_002_MSL_id_1_Sensor_tr_500_1st_900.csv_correction_example.png)
+
+**SWaT (block)**
+
+![P1 SWaT (block) correction example](../figures/P1_basic_171_SWaT_id_1_Sensor_tr_3749_1st_9522.csv_correction_example.png)
+
+### Characterization set
+
+**SMAP (point)**
+
+![P1 SMAP (point) correction example](../figures/P1_basic_smap_correction_example.png)
+
+**SMD (neutral)**
+
+![P1 SMD (neutral) correction example](../figures/P1_basic_smd_correction_example.png)
+
+**MITDB (periodic)**
+
+![P1 MITDB (periodic) correction example](../figures/P1_basic_mitdb_correction_example.png)
+
 ## Reproduce
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate

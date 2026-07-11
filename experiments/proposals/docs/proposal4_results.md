@@ -50,6 +50,42 @@ gradients spike at noise/discontinuities too) and it does not generalize across 
 ## Decision
 Does not beat tuned RW-1 → move to Proposal 5.
 
+## Correction examples
+
+Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+
+### Verdict collections
+
+**GECCO (block) — the win**
+
+![P4 GECCO (block) — the win correction example](../figures/P4_gradnorm_gecco_correction_example.png)
+
+**OPPORTUNITY (block)**
+
+![P4 OPPORTUNITY (block) correction example](../figures/P4_gradnorm_opportunity_correction_example.png)
+
+**CreditCard (point)**
+
+![P4 CreditCard (point) correction example](../figures/P4_gradnorm_creditcard_correction_example.png)
+
+### Shape extension
+
+**TAO (point)**
+
+![P4 TAO (point) correction example](../figures/P4_gradnorm_116_TAO_id_1_Environment_tr_500_1st_3.csv_correction_example.png)
+
+**PSM (mixed)**
+
+![P4 PSM (mixed) correction example](../figures/P4_gradnorm_115_PSM_id_1_Facility_tr_50000_1st_129872.csv_correction_example.png)
+
+**MSL (block)**
+
+![P4 MSL (block) correction example](../figures/P4_gradnorm_002_MSL_id_1_Sensor_tr_500_1st_900.csv_correction_example.png)
+
+**SWaT (block)**
+
+![P4 SWaT (block) correction example](../figures/P4_gradnorm_171_SWaT_id_1_Sensor_tr_3749_1st_9522.csv_correction_example.png)
+
 ## Reproduce
 ```bash
 source /ocean/projects/cis260190p/yhwang2/xlstmad_env/bin/activate
