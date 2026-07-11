@@ -42,31 +42,48 @@ def main():
         entity=os.environ.get("WANDB_ENTITY") or None,
         project=os.environ.get("WANDB_PROJECT", "rwml-autocegar"),
         mode=os.environ.get("WANDB_MODE", "online"),
-        name=f"P{args.proposal}-summary", group=f"proposal{args.proposal}",
-        job_type="summary", tags=["summary", f"P{args.proposal}"],
-        config={"proposal": args.proposal, "n_runs": len(df)}, reinit=True,
+        name=f"P{args.proposal}-summary", group=f"proposal{args.proposal}_corrected",
+        job_type="summary", tags=["summary", f"P{args.proposal}", "corrected"],
+        config={"proposal": args.proposal, "n_runs": len(df),
+                "correction_init": "neg_x"}, reinit=True,
     )
 
     # full table of every grid run
     run.log({"all_runs": wandb.Table(dataframe=df)})
 
-    # stage-1 rows carry the RW-1 baseline + delta
-    stage1 = df.dropna(subset=["rw1_auc_pr"]).drop_duplicates("dataset", keep="last")
-    summary = {"n_runs": len(df),
-               "n_datasets_improved": int((stage1["delta_pr"] > 0).sum()),
-               "n_datasets": len(stage1)}
-    for _, r in stage1.iterrows():
-        summary[f"delta_pr/{r['dataset']}"] = float(r["delta_pr"])
-        summary[f"auc_pr/{r['dataset']}"] = float(r["auc_pr"])
-        summary[f"rw1_auc_pr/{r['dataset']}"] = float(r["rw1_auc_pr"])
+    # per-collection verdict vs the reproduced RW-1 (best-HP). The rw1_auc_pr
+    # column is empty for the corrected runs, so compare against the reproduction
+    # reference means the same way aggregate_collection.py does.
+    VARIANT = {1: "basic", 2: "mc5", 3: "full", 4: "gradnorm", 5: "h5"}
+    ROOT = os.path.dirname(os.path.dirname(HERE))
+    rw_mean = (pd.read_csv(os.path.join(ROOT, "rw/reproduction/summary_rw1_besthp.csv"))
+               .groupby("family")["best_pr"].mean())
+    d = df[pd.to_numeric(df["auc_pr"], errors="coerce").notna()].copy()
+    d["auc_pr"] = d["auc_pr"].astype(float)
+    fixed = d[(pd.to_numeric(d["tau"], errors="coerce") == 2.0)
+              & (pd.to_numeric(d["lam"], errors="coerce") == 1.0)
+              & (d["variant"] == VARIANT[args.proposal])
+              & (d["extra"].fillna("") == "")]
+    coll_mean = fixed.groupby("collection")["auc_pr"].mean()
+    summary = {"n_runs": len(df), "n_collections": int(len(coll_mean))}
+    beat, chart_rows = 0, []
+    for coll, p_pr in coll_mean.items():
+        rwv = float(rw_mean.get(coll, float("nan")))
+        delta = float(p_pr) - rwv
+        beat += int(delta > 0)
+        summary[f"auc_pr/{coll}"] = float(p_pr)
+        summary[f"rw1_auc_pr/{coll}"] = rwv
+        summary[f"delta_pr/{coll}"] = delta
+        chart_rows.append([coll, delta])
+    summary["n_collections_beat_rw1"] = beat
     run.summary.update(summary)
 
-    # delta bar chart (P1 - RW-1 AUC-PR per dataset)
-    if len(stage1):
-        tbl = wandb.Table(data=[[r["dataset"], float(r["delta_pr"])] for _, r in stage1.iterrows()],
-                          columns=["dataset", "delta_pr"])
-        run.log({"delta_pr_by_dataset": wandb.plot.bar(tbl, "dataset", "delta_pr",
-                                                       title=f"P{args.proposal} - RW-1 AUC-PR delta")})
+    # delta bar chart (P{N} fixed-λ − RW-1 AUC-PR per collection)
+    if chart_rows:
+        tbl = wandb.Table(data=chart_rows, columns=["collection", "delta_pr"])
+        run.log({"delta_pr_by_collection": wandb.plot.bar(
+            tbl, "collection", "delta_pr",
+            title=f"P{args.proposal} fixed-λ − RW-1 AUC-PR delta by collection")})
 
     print("summary:", {k: round(v, 4) if isinstance(v, float) else v for k, v in summary.items()})
     run.finish()
