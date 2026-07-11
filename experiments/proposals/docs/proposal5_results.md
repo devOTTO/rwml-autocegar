@@ -61,9 +61,18 @@ is a genuine, reproducible win over tuned RW-1 on GECCO. It does not generalize 
 lost, MSL within noise, point/mixed ≈/below RW-1); deltas config-confounded (epoch/HP).
 Net: a scoped positive (GECCO) on a corrected-config negative-results arc.
 
+
+## Performance (AUC-PR by collection)
+
+![P5 AUC-PR comparison by collection](../figures/P5_comparison_bars.png)
+
+P5 is the only proposal with a bar above RW-1 on a real verdict collection: GECCO auto-λ (0.677 > 0.639), flagged above. Everywhere else it ties (TAO) or sits below (SWaT block, CreditCard point) — the win is GECCO-specific.
+
 ## Correction examples
 
-Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+**How to read these.** *Middle panel*: `original x` (blue) vs `corrected x = x + correction` (orange) — where the two diverge, the trained RW correction is large. *Bottom panel*: the CEGAR gate (green) and the per-step `|correction|` score (purple); the red band is the labelled anomaly. A detector scores well when both the gate and `|correction|` spike **inside** the red band and stay flat outside — that contrast is what the anomaly score (`mean|correction|`) turns into AUC-PR. The top strip shows where the zoom window sits in the whole series.
+
+**Analysis.** P5 has the tightest localization of the five (GECCO gate→label 0.945, correction ≈12.6× normal, 88% coverage): the gate and `|correction|` light up almost exactly on the red band and stay flat elsewhere — the visual counterpart of its GECCO win. On the long SWaT block the correction spreads and misses, matching its collapse there.
 
 ### Verdict collections
 

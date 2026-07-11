@@ -49,9 +49,18 @@ Confirms the docx MC-dropout-miscalibration risk.
 ## Decision
 Does not beat tuned RW-1; weakest gate → move to Proposal 3.
 
+
+## Performance (AUC-PR by collection)
+
+![P2 AUC-PR comparison by collection](../figures/P2_comparison_bars.png)
+
+P2's MC-dropout uncertainty gate is the weakest of the five: GECCO sits far below RW-1 because the uncertainty signal barely localizes anomalies, and no verdict collection is competitive.
+
 ## Correction examples
 
-Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+**How to read these.** *Middle panel*: `original x` (blue) vs `corrected x = x + correction` (orange) — where the two diverge, the trained RW correction is large. *Bottom panel*: the CEGAR gate (green) and the per-step `|correction|` score (purple); the red band is the labelled anomaly. A detector scores well when both the gate and `|correction|` spike **inside** the red band and stay flat outside — that contrast is what the anomaly score (`mean|correction|`) turns into AUC-PR. The top strip shows where the zoom window sits in the whole series.
+
+**Analysis.** The gate is driven by MC-dropout uncertainty, which on GECCO barely separates anomalies from normal (gate→label ≈0.51, near chance), so the correction is diffuse — weak, spread-out spikes rather than a tight block.
 
 ### Verdict collections
 

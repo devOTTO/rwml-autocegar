@@ -49,9 +49,18 @@ pair nets out roughly neutral. Near-ties RW-1 on opportunity.
 ## Decision
 Does not beat tuned RW-1 → move to Proposal 4.
 
+
+## Performance (AUC-PR by collection)
+
+![P3 AUC-PR comparison by collection](../figures/P3_comparison_bars.png)
+
+P3's consistency gate lands mid-pack — close to RW-1 on the low-baseline collections but well under on GECCO, and it collapses on the strong SWaT block like the others.
+
 ## Correction examples
 
-Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+**How to read these.** *Middle panel*: `original x` (blue) vs `corrected x = x + correction` (orange) — where the two diverge, the trained RW correction is large. *Bottom panel*: the CEGAR gate (green) and the per-step `|correction|` score (purple); the red band is the labelled anomaly. A detector scores well when both the gate and `|correction|` spike **inside** the red band and stay flat outside — that contrast is what the anomaly score (`mean|correction|`) turns into AUC-PR. The top strip shows where the zoom window sits in the whole series.
+
+**Analysis.** The consistency gate fires moderately at anomalies; correction concentration on GECCO (≈7.5×) is lower than P1/P4/P5, consistent with its weaker score.
 
 ### Verdict collections
 

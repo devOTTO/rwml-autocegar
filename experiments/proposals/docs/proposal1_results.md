@@ -51,9 +51,18 @@ opportunity (0.48) yet near-ties RW-1. Point anomalies (creditcard) stay weak.
 ## Decision
 Competitive but does not beat tuned RW-1 → move to Proposal 2.
 
+
+## Performance (AUC-PR by collection)
+
+![P1 AUC-PR comparison by collection](../figures/P1_comparison_bars.png)
+
+P1's residual-wrongness gate tracks RW-1 closely on GECCO (fixed just under the tuned baseline, auto-λ nearly level) but never clears it on a verdict collection; the only bars above RW-1 are the trivial (TAO) and weak-baseline (MSL) cases.
+
 ## Correction examples
 
-Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+**How to read these.** *Middle panel*: `original x` (blue) vs `corrected x = x + correction` (orange) — where the two diverge, the trained RW correction is large. *Bottom panel*: the CEGAR gate (green) and the per-step `|correction|` score (purple); the red band is the labelled anomaly. A detector scores well when both the gate and `|correction|` spike **inside** the red band and stay flat outside — that contrast is what the anomaly score (`mean|correction|`) turns into AUC-PR. The top strip shows where the zoom window sits in the whole series.
+
+**Analysis.** On GECCO the correction concentrates sharply on the anomaly (≈11.6× the normal level), flattening the spike — the mechanism works, but fixed-λ contrast stays just short of the tuned RW-1. On CreditCard (point) the correction barely fires, matching its low score.
 
 ### Verdict collections
 

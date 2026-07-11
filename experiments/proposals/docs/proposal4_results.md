@@ -50,9 +50,18 @@ gradients spike at noise/discontinuities too) and it does not generalize across 
 ## Decision
 Does not beat tuned RW-1 → move to Proposal 5.
 
+
+## Performance (AUC-PR by collection)
+
+![P4 AUC-PR comparison by collection](../figures/P4_comparison_bars.png)
+
+P4's dual (residual × input-gradient) gate is the runner-up on GECCO — auto-λ comes close to RW-1 — but does not clear it; elsewhere it tracks the other gates.
+
 ## Correction examples
 
-Original signal vs. the trained correction (`neg_x` init, gate on after warm-up). Each row of the corpus is one series; the correction concentrates where the model flags anomalies. Rendered from `../figures/` (also logged to each `-example` wandb run).
+**How to read these.** *Middle panel*: `original x` (blue) vs `corrected x = x + correction` (orange) — where the two diverge, the trained RW correction is large. *Bottom panel*: the CEGAR gate (green) and the per-step `|correction|` score (purple); the red band is the labelled anomaly. A detector scores well when both the gate and `|correction|` spike **inside** the red band and stay flat outside — that contrast is what the anomaly score (`mean|correction|`) turns into AUC-PR. The top strip shows where the zoom window sits in the whole series.
+
+**Analysis.** The dual residual×gradient gate localizes the GECCO anomaly well (gate→label ≈0.81) and concentrates correction (≈10.4×) — the second strongest — but still lands under the tuned RW-1.
 
 ### Verdict collections
 
