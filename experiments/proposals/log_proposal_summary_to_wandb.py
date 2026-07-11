@@ -34,7 +34,9 @@ def main():
     df = pd.read_csv(csv)
     # keep only the latest row per config (results_pN.csv accumulates across
     # re-runs; keep='last' -> the most recent batch for each unique setting).
-    keys = [c for c in ["dataset", "variant", "tau", "lam", "epochs"] if c in df.columns]
+    # include 'extra' so fixed-λ and auto-λ (extra=lam_mode=auto_tr) rows for the
+    # same dataset are NOT collapsed into one (they share dataset/variant/tau/lam).
+    keys = [c for c in ["dataset", "variant", "tau", "lam", "epochs", "extra"] if c in df.columns]
     df = df.drop_duplicates(subset=keys, keep="last").reset_index(drop=True)
     print(f"loaded {len(df)} runs (deduped by {keys}) from {csv}")
 
