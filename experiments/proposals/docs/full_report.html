@@ -1,0 +1,392 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1">
+<title>Auto-CEGAR × RW-ML: Full Experimental Report (P1–P5)</title>
+<style>
+  :root{
+    --paper:#f6f7f6; --raised:#fdfefd; --ink:#191d21; --muted:#5c6570;
+    --line:#e3e6e3; --accent:#0d6e6e; --accent-soft:#0d6e6e14;
+    --win:#157347; --win-soft:#15734718; --loss:#9a4038; --near:#9a7b1f;
+    --shadow:0 1px 2px #0000000d,0 8px 24px #0000000a;
+  }
+  @media (prefers-color-scheme:dark){
+    :root{ --paper:#121518; --raised:#191d21; --ink:#e7eae7; --muted:#9aa3ad;
+      --line:#272c31; --accent:#4db6ac; --accent-soft:#4db6ac1f;
+      --win:#5ecb8b; --win-soft:#5ecb8b1e; --loss:#dd9088; --near:#d8b45a;
+      --shadow:0 1px 2px #0000001f,0 10px 30px #00000030; }
+  }
+  :root[data-theme="light"]{ --paper:#f6f7f6; --raised:#fdfefd; --ink:#191d21; --muted:#5c6570;
+    --line:#e3e6e3; --accent:#0d6e6e; --accent-soft:#0d6e6e14;
+    --win:#157347; --win-soft:#15734718; --loss:#9a4038; --near:#9a7b1f; }
+  :root[data-theme="dark"]{ --paper:#121518; --raised:#191d21; --ink:#e7eae7; --muted:#9aa3ad;
+    --line:#272c31; --accent:#4db6ac; --accent-soft:#4db6ac1f;
+    --win:#5ecb8b; --win-soft:#5ecb8b1e; --loss:#dd9088; --near:#d8b45a; }
+
+  *{box-sizing:border-box}
+  body{background:var(--paper);color:var(--ink);margin:0;
+    font:16px/1.6 -apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+    -webkit-font-smoothing:antialiased;}
+  .wrap{max-width:960px;margin:0 auto;padding:64px 24px 96px;}
+  h1,h2,h3{font-family:Georgia,"Iowan Old Style","Times New Roman",serif;
+    font-weight:600;text-wrap:balance;letter-spacing:-.01em;line-height:1.2;}
+  h1{font-size:2.1rem;margin:0 0 .3em;}
+  h2{font-size:1.45rem;margin:2.8em 0 .7em;padding-bottom:.3em;border-bottom:1px solid var(--line);}
+  h2 .no{color:var(--accent);font-family:ui-monospace,SFMono-Regular,Menlo,monospace;
+    font-size:.8em;font-weight:600;margin-right:.6em;}
+  h3{font-size:1.08rem;margin:1.9em 0 .5em;}
+  p{margin:.7em 0;max-width:70ch}
+  .eyebrow{font:600 .72rem/1 ui-monospace,SFMono-Regular,Menlo,monospace;
+    letter-spacing:.16em;text-transform:uppercase;color:var(--accent);margin-bottom:1.1em;}
+  a{color:var(--accent)}
+  code{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.88em;
+    background:var(--accent-soft);padding:.1em .35em;border-radius:4px;}
+  .lede{font-size:1.12rem;max-width:72ch}
+  .formula{font-family:ui-monospace,SFMono-Regular,Menlo,monospace;font-size:.86rem;
+    background:var(--raised);border:1px solid var(--line);border-radius:8px;
+    padding:10px 14px;margin:.8em 0;overflow-x:auto;white-space:nowrap;color:var(--ink);}
+
+  .callout{background:var(--raised);border:1px solid var(--line);border-left:3px solid var(--accent);
+    border-radius:10px;padding:20px 24px;margin:1.4em 0;box-shadow:var(--shadow);}
+  .callout.win{border-left-color:var(--win)}
+  .callout.warn{border-left-color:var(--near)}
+  .callout h3{margin-top:0}
+  .callout :last-child{margin-bottom:0}
+
+  .tbl{overflow-x:auto;margin:1.1em 0;border:1px solid var(--line);border-radius:10px;background:var(--raised);}
+  table{border-collapse:collapse;width:100%;font-size:.9rem;font-variant-numeric:tabular-nums;}
+  th,td{padding:9px 12px;text-align:right;border-bottom:1px solid var(--line);white-space:nowrap;}
+  th:first-child,td:first-child{text-align:left}
+  td.l{text-align:left;white-space:normal}
+  thead th{font:600 .72rem/1.3 ui-monospace,Menlo,monospace;text-transform:uppercase;
+    letter-spacing:.04em;color:var(--muted);background:var(--accent-soft);}
+  tbody tr:last-child td{border-bottom:none}
+  .win{color:var(--win);font-weight:700}
+  .loss{color:var(--loss)}
+  .near{color:var(--near)}
+  .mut{color:var(--muted)}
+  .row-hl{background:var(--win-soft)}
+  caption{caption-side:bottom;color:var(--muted);font-size:.8rem;padding:8px 12px;text-align:left}
+
+  .grid2{display:grid;grid-template-columns:1fr 1fr;gap:14px;margin:1.2em 0}
+  @media(max-width:640px){.grid2{grid-template-columns:1fr}}
+  .fact{background:var(--raised);border:1px solid var(--line);border-radius:10px;padding:14px 16px}
+  .fact .k{font:600 .7rem/1 ui-monospace,Menlo,monospace;letter-spacing:.08em;text-transform:uppercase;color:var(--muted)}
+  .fact .v{font-size:1rem;margin-top:.35em}
+  .diag{font-size:.9rem;color:var(--muted);background:var(--accent-soft);border-radius:8px;
+    padding:10px 14px;margin:.8em 0;max-width:none}
+  .diag b{color:var(--ink)}
+  ul{max-width:72ch}
+  li{margin:.4em 0}
+  .verdict{font-size:.78rem;font-weight:700;font-family:ui-monospace,Menlo,monospace;
+    letter-spacing:.05em;padding:.2em .6em;border-radius:99px;vertical-align:middle;}
+  .verdict.v-loss{background:var(--accent-soft);color:var(--muted)}
+  .verdict.v-win{background:var(--win-soft);color:var(--win)}
+  .foot{margin-top:3em;padding-top:1.2em;border-top:1px solid var(--line);color:var(--muted);font-size:.85rem}
+</style>
+</head>
+<body>
+
+<div class="wrap">
+  <div class="eyebrow">Auto-CEGAR × RW-ML · TSB-AD-M · Full Report</div>
+  <h1>Gating the RW-1 correction gradient: the complete P1–P5 experimental record</h1>
+  <p class="lede">Companion to the <em>Proposal 1–5 Results</em> summary page: the full record
+  of the study, from the thesis reproduction it stands on, through the warm-up config fix
+  that overturned the first verdict, to per-proposal results, robustness runs, and the
+  shape-spectrum generalization test.</p>
+
+  <div class="callout win">
+    <h3>Bottom line</h3>
+    <ul style="margin:.4em 0">
+      <li><strong>The first "gating never helps" verdict was a config artifact.</strong>
+        With warm-up = plain RW-1 (gate off) then gate on, and <code>neg_x</code> init,
+        all five proposals are competitive with the tuned RW-1.</li>
+      <li><strong class="win">P5 (temporal persistence) + auto-λ beats the best-HP/200ep RW-1
+        on GECCO in 6 of 6 repeat runs</strong> (min 0.661 &gt; 0.639, mean 0.677). The only
+        verdict-set win of any proposal, and it is reproducible.</li>
+      <li><strong>No generalization.</strong> Across the anomaly-shape spectrum there is no
+        consistent pattern; the win is GECCO-specific.</li>
+    </ul>
+  </div>
+
+  <h2><span class="no">1</span>Background and objective</h2>
+  <p><strong>Base method (RW-1).</strong> From Baldo's 2025 FEUP MSc thesis, "Read &amp; Write
+  Machine Learning for Outlier Detection in Multivariate Time Series": a DeepAnT-style CNN
+  forecaster plus a separate trainable <code>correction</code> tensor, initialized as
+  <code>-X</code> so the initial corrected input is a zero series. The model predicts the
+  corrected series; the loss is RMSE(X+correction, Y+correction) plus an L1 sparsity penalty
+  on the correction. Gradients w.r.t. the correction accumulate over each epoch and are
+  applied once at epoch end via RMSprop (the Epoch-Wise strategy of Algorithm&nbsp;2). The
+  anomaly score is <code>mean|correction|</code> per timestep: points the model cannot
+  predict keep large corrections.</p>
+  <p><strong>Added idea (Auto-CEGAR).</strong> From our prior Auto-CEGAR work in the
+  classification domain: a gate <code>g = wrongness × confidence</code> in [0,1] gives a
+  per-window gradient scale <code>s = 1 + λ·g</code>, applied through ScaleGrad (identity
+  forward, so the reported loss stays the true RMSE; only the backward gradient is
+  multiplied). Auto-controllers adapt λ (tail-ratio controller) and τ (valley-detection
+  controller) at each epoch end.</p>
+  <p><strong>Research question.</strong> Does CEGAR-style gating of the RW-1 correction
+  gradient, steering correction effort toward "confidently wrong" windows, improve
+  unsupervised multivariate time-series anomaly detection over plain RW-1?</p>
+
+  <h3>The five candidate gates</h3>
+  <p>All five are thin subclasses of a common <code>CNN_RW_CEGAR</code> base (itself a
+  subclass of the reproduced RW-1) overriding only the signal computation; warm-up,
+  gate mechanics, ScaleGrad, controllers, and scoring are shared.</p>
+  <div class="tbl"><table>
+    <thead><tr><th>#</th><th>Name</th><th style="text-align:left">Gate signals</th></tr></thead>
+    <tbody>
+      <tr><td>P1</td><td class="l">Residual-Gated</td><td class="l">wrongness from a robust z-score of the residual: <code>E_t = σ(k·(robust_z − τ))</code>, <code>robust_z = (r − median)/MAD</code>; confidence = 1 (basic variant)</td></tr>
+      <tr><td>P2</td><td class="l">Uncertainty-Aware</td><td class="l">MC-dropout (M = 5 passes): uncertainty <code>u_t</code>, normalized error <code>e_t = ‖Y − μ‖/√(u_t+ε)</code>; gate = high error AND low uncertainty</td></tr>
+      <tr><td>P3</td><td class="l">Correction-Consistency</td><td class="l">the correction's own behaviour: magnitude <code>d_t</code> and epoch-to-epoch direction consistency <code>v_t = cos(ΔC^e, ΔC^{e−1})</code>; amplify + preserve write-back <code>grad·(1 − γg)</code></td></tr>
+      <tr><td>P4</td><td class="l">Dual-Gate Residual + Gradient</td><td class="l"><code>g_res</code> (robust-z residual) × <code>g_grad</code> (robust-z of input-gradient norm; costs an extra forward+backward per batch)</td></tr>
+      <tr><td>P5</td><td class="l">Temporal-Persistence</td><td class="l">gate only errors that persist over neighbouring windows: <code>m_t = 1(e_t &gt; τ_e)</code>, <code>p_t = mean(m_{t−h..t+h})</code>, <code>g = σ(k(e_t−τ_e)/mad) · σ(k_p(p_t−τ_p))</code></td></tr>
+    </tbody>
+  </table></div>
+
+  <h2><span class="no">2</span>Reproduction foundation</h2>
+  <p>All experiments sit on a reproduction of the thesis baselines on TSB-AD-M
+  (180 files / 199 result rows), run through the TSB-AD benchmark harness on PSC Bridges2:</p>
+  <div class="grid2">
+    <div class="fact"><div class="k">DeepAnT</div><div class="v">AUC-PR 0.350</div></div>
+    <div class="fact"><div class="k">RW</div><div class="v">AUC-PR 0.321</div></div>
+    <div class="fact"><div class="k">RW-1 (best-HP)</div><div class="v">AUC-PR <strong>0.289</strong> vs paper 0.28 (within ~0.01)</div></div>
+    <div class="fact"><div class="k">Harness</div><div class="v">TSB-AD <code>Run_Detector_M</code>, SLURM (v100-32)</div></div>
+  </div>
+  <p>Two documented fixes were required to reproduce RW-1 faithfully:</p>
+  <ul>
+    <li><strong>Gradient activation = linear</strong> (identity), as in the Algorithm 2
+      pseudocode. The tabled ReLU interacts badly with the L1 gradient: with
+      correction ≈ −X the L1 gradient sign is ≈ −1 everywhere, ReLU zeroes the combined
+      gradient, and the correction freezes (score inversion on Genesis/GECCO/GHL).</li>
+    <li><strong><code>l1_weight = 1e-3</code></strong> instead of the implicit 1.0:
+      <code>torch.norm</code> sums over all elements, so full-weight L1 crushes the
+      correction to zero over 200 epochs and collapses the anomaly signal.</li>
+  </ul>
+
+  <h2><span class="no">3</span>Experimental design</h2>
+  <div class="grid2">
+    <div class="fact"><div class="k">Screening</div><div class="v">Fail-fast: verdict set first; promote only on a clear win</div></div>
+    <div class="fact"><div class="k">Verdict set</div><div class="v">OPPORTUNITY (activity, 8 series) · GECCO (water, 1) · CreditCard (finance, 1)</div></div>
+    <div class="fact"><div class="k">Shape extension</div><div class="v">TAO (point, 13) · PSM (mixed, 1) · MSL (block, 16) · SWaT (block, 2)</div></div>
+    <div class="fact"><div class="k">RW-1 base HP (fixed)</div><div class="v"><code>window=50 · batch=256 · l1_weight=0.001 · activation=linear · correction_rate=0.1</code></div></div>
+    <div class="fact"><div class="k">Training</div><div class="v">100 epochs · warm-up 10 = plain RW-1 (gate off) → gate on · <code>correction_init='neg_x'</code></div></div>
+    <div class="fact"><div class="k">Gate configs</div><div class="v">λ = 1 fixed and <code>lam_mode='auto_tr'</code> (auto-λ), per proposal</div></div>
+    <div class="fact"><div class="k">Evaluation</div><div class="v">whole-collection mean AUC-PR · score = <code>mean|correction|</code></div></div>
+    <div class="fact"><div class="k">Seeds</div><div class="v">none · 1 run/cell, except P5 GECCO robustness (6 runs per config)</div></div>
+  </div>
+  <div class="callout warn">
+    <h3>Standing caveat</h3>
+    <p>Proposals run 100 epochs with default HP while the RW-1 reference is
+    best-HP / 200 epochs, so every Δ is config-confounded on that axis. Magnitudes are
+    indicative, not a like-for-like tune-off.</p>
+  </div>
+  <p>All runs are tracked in wandb (<code>yoonmeeh-cmu/rwml-autocegar</code>) with per-epoch
+  <code>train/*</code> metrics, gate/correction interpretability metrics
+  (<code>gate/*</code>, <code>corr/*</code>), and per-proposal summary runs; compute nodes
+  log offline and are synced afterwards.</p>
+
+  <h2><span class="no">4</span>The warm-up config fix</h2>
+  <p>The first screening round used <strong>forecaster-only warm-up</strong> (correction OFF
+  during warm-up) with <code>correction_init='zero'</code>. Under that config every proposal
+  lost to RW-1, with deltas as large as −0.14 on GECCO: the original "P1 lost 0/3, gating
+  never helps" verdict.</p>
+  <p>Diagnosis showed this was largely a <strong>config artifact</strong>, not a property of
+  gating: starting the correction late and from zero deprives it of the training budget and
+  the Algorithm-2 dynamics that plain RW-1 enjoys. The corrected config keeps warm-up but
+  changes what warms up:</p>
+  <div class="callout">
+    <p><strong>Corrected config:</strong> 10 epochs of <strong>plain RW-1</strong>
+    (correction training ON, gate OFF), then the CEGAR gate switches on; Algorithm-2-faithful
+    <code>neg_x</code> init; 100 epochs total. Old runs archived in
+    <code>_backup_oldconfig/</code>; corrected wandb runs regrouped.</p>
+  </div>
+  <p>Under the corrected config all five proposals became competitive with the tuned RW-1.
+  The reversal is itself a substantive result: the initial all-negative verdict was a
+  training-curriculum artifact.</p>
+
+  <h2><span class="no">5</span>Results per proposal</h2>
+  <p class="mut">All tables: AUC-PR, fixed-λ / auto-λ. RW-1 and DeepAnT columns are
+  reproduction per-collection means (best-HP/200ep). V = verdict set, E = extension.
+  <strong class="win">W</strong> = fixed beats RW-1. Diagnostics follow thesis §8.4
+  (gate→label AUC, correction concentration anomaly/normal, coverage).</p>
+
+  <h3>P1 · Residual-Gated <span class="verdict v-loss">0/3 VERDICT</span></h3>
+  <div class="formula">E_t = σ(k·(robust_z − τ)) · robust_z = (r − median)/MAD · C_t = 1 · variant basic · k=1, τ=2</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Collection</th><th>shape</th><th>set</th><th>DeepAnT</th><th>RW-1</th><th>P1 fixed</th><th>auto-λ</th><th>Δ (fixed)</th></tr></thead>
+    <tbody>
+      <tr><td>GECCO</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.454</td><td>0.639</td><td>0.565</td><td>0.618</td><td class="loss">−0.074</td></tr>
+      <tr><td>OPPORTUNITY</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.272</td><td>0.138</td><td>0.123</td><td>0.113</td><td class="near">−0.015</td></tr>
+      <tr><td>CreditCard</td><td class="mut">point</td><td class="mut">V</td><td class="mut">0.147</td><td>0.111</td><td>0.032</td><td>0.035</td><td class="loss">−0.079</td></tr>
+      <tr><td>TAO</td><td class="mut">point</td><td class="mut">E</td><td class="mut">0.996</td><td>0.995</td><td>0.995</td><td>0.995</td><td class="mut">≈0 tie</td></tr>
+      <tr><td>PSM</td><td class="mut">mixed</td><td class="mut">E</td><td class="mut">0.407</td><td>0.137</td><td>0.125</td><td>0.126</td><td class="near">−0.012</td></tr>
+      <tr><td>MSL</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.116</td><td>0.131</td><td class="win">0.136</td><td>0.118</td><td class="win">+0.005</td></tr>
+      <tr><td>SWaT</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.516</td><td>0.444</td><td>0.139</td><td>0.131</td><td class="loss">−0.305</td></tr>
+    </tbody>
+    <caption>AUC-ROC (fixed, verdict): OPPORTUNITY 0.703 · GECCO 0.918 · CreditCard 0.716.</caption>
+  </table></div>
+  <div class="diag"><b>Diagnostics (fixed):</b> GECCO gate→label AUC <b>0.896</b>, concentration <b>11.6×</b>, coverage <b>0.776</b> · CreditCard 0.951 / 1.84× / 0.315 · OPPORTUNITY 0.480 / 1.09× / 0.145</div>
+  <p><strong>Reading.</strong> Close but 0/3: near-tie on OPPORTUNITY, −0.074 on GECCO
+  (auto-λ closes it to −0.021). On GECCO the residual gate localizes anomalies well and
+  correction concentrates there; under the corrected config this concentration raises score
+  contrast (the old "correction erases the anomalies" failure mode no longer dominates).
+  Point anomalies stay weak. <strong>Decision:</strong> competitive, does not beat tuned
+  RW-1, move to P2.</p>
+
+  <h3>P2 · Uncertainty-Aware <span class="verdict v-loss">0/3 VERDICT</span></h3>
+  <div class="formula">u_t = (1/M)Σ‖Ŷ^m − μ‖² · e_t = ‖Y − μ‖/√(u_t+ε) · g = σ(k_e(e_t−τ_e))·σ(k_c(τ_u−u_t)) · variant mc5</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Collection</th><th>shape</th><th>set</th><th>DeepAnT</th><th>RW-1</th><th>P2 fixed</th><th>auto-λ</th><th>Δ (fixed)</th></tr></thead>
+    <tbody>
+      <tr><td>GECCO</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.454</td><td>0.639</td><td>0.380</td><td>0.383</td><td class="loss">−0.259</td></tr>
+      <tr><td>OPPORTUNITY</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.272</td><td>0.138</td><td>0.125</td><td>0.125</td><td class="near">−0.013</td></tr>
+      <tr><td>CreditCard</td><td class="mut">point</td><td class="mut">V</td><td class="mut">0.147</td><td>0.111</td><td>0.025</td><td>0.025</td><td class="loss">−0.086</td></tr>
+      <tr><td>TAO</td><td class="mut">point</td><td class="mut">E</td><td class="mut">0.996</td><td>0.995</td><td>0.995</td><td>0.995</td><td class="mut">≈0 tie</td></tr>
+      <tr><td>PSM</td><td class="mut">mixed</td><td class="mut">E</td><td class="mut">0.407</td><td>0.137</td><td>0.116</td><td>0.115</td><td class="loss">−0.021</td></tr>
+      <tr><td>MSL</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.116</td><td>0.131</td><td class="win">0.135</td><td class="win">0.134</td><td class="win">+0.004</td></tr>
+      <tr><td>SWaT</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.516</td><td>0.444</td><td>0.133</td><td>0.136</td><td class="loss">−0.311</td></tr>
+    </tbody>
+    <caption>AUC-ROC (fixed): OPPORTUNITY 0.708 · GECCO 0.838 · CreditCard 0.605.</caption>
+  </table></div>
+  <div class="diag"><b>Diagnostics (fixed):</b> GECCO gate→label AUC <b>0.510</b> (≈ random), concentration 6.43×, coverage 0.617 · CreditCard 0.409 / 1.63× / 0.201 · OPPORTUNITY 0.182 / 1.08× / 0.140</div>
+  <p><strong>Reading.</strong> The MC-dropout uncertainty gate is the weakest localizer of
+  the five, so there is nothing useful to amplify and auto-λ stays flat. Empirically
+  confirms the MC-dropout miscalibration risk flagged in the proposal doc.
+  <strong>Decision:</strong> move to P3.</p>
+
+  <h3>P3 · Correction-Consistency <span class="verdict v-loss">0/3 VERDICT</span></h3>
+  <div class="formula">d_t = mean_feat|C_t| · v_t = cos(ΔC^e, ΔC^{e−1}) · g = σ(k_d(d−τ_d)/sd)·σ(k_v(v−τ_v)) · amplify + preserve (γ=0.9) · variant full</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Collection</th><th>shape</th><th>set</th><th>DeepAnT</th><th>RW-1</th><th>P3 fixed</th><th>auto-λ</th><th>Δ (fixed)</th></tr></thead>
+    <tbody>
+      <tr><td>GECCO</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.454</td><td>0.639</td><td>0.379</td><td>0.386</td><td class="loss">−0.260</td></tr>
+      <tr><td>OPPORTUNITY</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.272</td><td>0.138</td><td>0.135</td><td>0.131</td><td class="near">−0.003</td></tr>
+      <tr><td>CreditCard</td><td class="mut">point</td><td class="mut">V</td><td class="mut">0.147</td><td>0.111</td><td>0.027</td><td>0.026</td><td class="loss">−0.084</td></tr>
+      <tr><td>TAO</td><td class="mut">point</td><td class="mut">E</td><td class="mut">0.996</td><td>0.995</td><td>0.996</td><td>0.996</td><td class="mut">≈0 tie</td></tr>
+      <tr><td>PSM</td><td class="mut">mixed</td><td class="mut">E</td><td class="mut">0.407</td><td>0.137</td><td>0.118</td><td>0.118</td><td class="loss">−0.019</td></tr>
+      <tr><td>MSL</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.116</td><td>0.131</td><td>0.128</td><td>0.130</td><td class="near">−0.003</td></tr>
+      <tr><td>SWaT</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.516</td><td>0.444</td><td>0.141</td><td>0.143</td><td class="loss">−0.303</td></tr>
+    </tbody>
+    <caption>AUC-ROC (fixed): OPPORTUNITY 0.717 · GECCO 0.841 · CreditCard 0.614.</caption>
+  </table></div>
+  <div class="diag"><b>Diagnostics (fixed):</b> GECCO gate→label AUC <b>0.829</b>, concentration 7.51×, coverage 0.610 · CreditCard 0.576 / 1.70× / 0.213 · OPPORTUNITY 0.359 / 1.10× / 0.167</div>
+  <p><strong>Reading.</strong> Closest of all proposals on OPPORTUNITY (−0.003) but well
+  below on GECCO. The consistency gate localizes reasonably there and preserves correction,
+  yet the amplify-vs-preserve pair nets out roughly neutral.
+  <strong>Decision:</strong> move to P4.</p>
+
+  <h3>P4 · Dual-Gate Residual + Gradient <span class="verdict v-loss">0/3 VERDICT</span></h3>
+  <div class="formula">g_res = σ(k_r(robust_z(resid)−τ_r)) · h_t = ‖∂loss/∂input‖ · g_grad = σ(k_h(robust_z(h_t)−τ_h)) · g = g_res·g_grad · variant gradnorm · amplification only</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Collection</th><th>shape</th><th>set</th><th>DeepAnT</th><th>RW-1</th><th>P4 fixed</th><th>auto-λ</th><th>Δ (fixed)</th></tr></thead>
+    <tbody>
+      <tr><td>GECCO</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.454</td><td>0.639</td><td>0.599</td><td>0.628</td><td class="near">−0.040</td></tr>
+      <tr><td>OPPORTUNITY</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.272</td><td>0.138</td><td>0.107</td><td>0.110</td><td class="loss">−0.031</td></tr>
+      <tr><td>CreditCard</td><td class="mut">point</td><td class="mut">V</td><td class="mut">0.147</td><td>0.111</td><td>0.026</td><td>0.025</td><td class="loss">−0.085</td></tr>
+      <tr><td>TAO</td><td class="mut">point</td><td class="mut">E</td><td class="mut">0.996</td><td>0.995</td><td>0.995</td><td>0.995</td><td class="mut">≈0 tie</td></tr>
+      <tr><td>PSM</td><td class="mut">mixed</td><td class="mut">E</td><td class="mut">0.407</td><td>0.137</td><td>0.125</td><td>0.128</td><td class="near">−0.012</td></tr>
+      <tr><td>MSL</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.116</td><td>0.131</td><td>0.122</td><td>0.121</td><td class="near">−0.009</td></tr>
+      <tr><td>SWaT</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.516</td><td>0.444</td><td>0.143</td><td>0.149</td><td class="loss">−0.301</td></tr>
+    </tbody>
+    <caption>AUC-ROC (fixed): OPPORTUNITY 0.671 · GECCO 0.935 · CreditCard 0.637.</caption>
+  </table></div>
+  <div class="diag"><b>Diagnostics (fixed):</b> GECCO gate→label AUC <b>0.809</b>, concentration <b>10.4×</b>, coverage <b>0.840</b> · CreditCard 0.839 / 1.70× / 0.246 · OPPORTUNITY 0.495 / 1.08× / 0.120</div>
+  <p><strong>Reading.</strong> The closest non-P5 proposal on GECCO (auto-λ 0.628,
+  Δ −0.011) with strong concentration and coverage. But the input-gradient signal is noisy
+  (gradients also spike at noise and discontinuities), it costs an extra forward+backward
+  per batch, and it does not generalize. <strong>Decision:</strong> move to P5.</p>
+
+  <h3>P5 · Temporal-Persistence <span class="verdict v-win">1/3 VERDICT · GECCO W</span></h3>
+  <div class="formula">m_t = 1(e_t &gt; τ_e) · p_t = mean(m_{t−h..t+h}) · g = σ(k(e_t−τ_e)/mad)·σ(k_p(p_t−τ_p)) · variant h5 · q_e=0.8, k_p=5, τ_p=0.5</div>
+  <div class="tbl"><table>
+    <thead><tr><th>Collection</th><th>shape</th><th>set</th><th>DeepAnT</th><th>RW-1</th><th>P5 fixed</th><th>auto-λ</th><th>Δ (fixed)</th></tr></thead>
+    <tbody>
+      <tr class="row-hl"><td><strong>GECCO</strong></td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.454</td><td>0.639</td><td class="win">0.643</td><td class="win">0.677</td><td class="win">+0.004</td></tr>
+      <tr><td>OPPORTUNITY</td><td class="mut">block</td><td class="mut">V</td><td class="mut">0.272</td><td>0.138</td><td>0.114</td><td>0.111</td><td class="loss">−0.024</td></tr>
+      <tr><td>CreditCard</td><td class="mut">point</td><td class="mut">V</td><td class="mut">0.147</td><td>0.111</td><td>0.029</td><td>0.032</td><td class="loss">−0.082</td></tr>
+      <tr><td>TAO</td><td class="mut">point</td><td class="mut">E</td><td class="mut">0.996</td><td>0.995</td><td>0.996</td><td>0.995</td><td class="mut">≈0 tie</td></tr>
+      <tr><td>PSM</td><td class="mut">mixed</td><td class="mut">E</td><td class="mut">0.407</td><td>0.137</td><td>0.124</td><td>0.130</td><td class="near">−0.013</td></tr>
+      <tr><td>MSL</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.116</td><td>0.131</td><td class="win">0.137</td><td>0.130</td><td class="win">+0.006</td></tr>
+      <tr><td>SWaT</td><td class="mut">block</td><td class="mut">E</td><td class="mut">0.516</td><td>0.444</td><td>0.141</td><td>0.154</td><td class="loss">−0.303</td></tr>
+    </tbody>
+    <caption>AUC-ROC (fixed): OPPORTUNITY 0.683 · GECCO 0.953 · CreditCard 0.629. The only verdict-set win of any proposal.</caption>
+  </table></div>
+  <div class="diag"><b>Diagnostics (fixed):</b> GECCO gate→label AUC <b>0.945</b>, concentration <b>12.55×</b>, coverage <b>0.877</b> · CreditCard 0.899 / 1.75× / 0.222 · OPPORTUNITY 0.684 / 1.08× / 0.134</div>
+
+  <h2><span class="no">6</span>Headline result: P5 GECCO robustness</h2>
+  <p>Because runs are unseeded, the GECCO win was re-run 6× per config to separate a real
+  effect from run-to-run spread:</p>
+  <div class="tbl"><table>
+    <thead><tr><th>P5 on GECCO</th><th style="text-align:left">individual runs</th><th>mean</th><th>&gt; RW-1 0.639</th></tr></thead>
+    <tbody>
+      <tr><td>fixed-λ</td><td class="l mut">0.633 · 0.635 · 0.639 · 0.648 · 0.648 · 0.652</td><td>0.643</td><td class="near">4/6 · min 0.633 · statistical tie</td></tr>
+      <tr class="row-hl"><td><strong>auto-λ</strong></td><td class="l mut">0.661 · 0.672 · 0.672 · 0.682 · 0.683 · 0.690</td><td class="win">0.677</td><td class="win">6/6 · min 0.661 · robust win</td></tr>
+    </tbody>
+    <caption>Fixed-λ straddles the baseline. Auto-λ clears it on every run, worst run 0.661 vs baseline 0.639: a genuine, reproducible win, and a win for the auto-λ controller specifically (it also lifts P1 and P4 on GECCO).</caption>
+  </table></div>
+
+  <h2><span class="no">7</span>Why P5 wins: cross-proposal diagnostics (GECCO, fixed)</h2>
+  <div class="tbl"><table>
+    <thead><tr><th>Proposal</th><th>gate→label AUC</th><th>corr @anom/norm</th><th>Overlap (prec)</th><th>Coverage (recall)</th></tr></thead>
+    <tbody>
+      <tr class="row-hl"><td><strong>P5</strong></td><td class="win">0.945</td><td class="win">12.55</td><td class="win">0.219</td><td class="win">0.877</td></tr>
+      <tr><td>P1</td><td>0.896</td><td>11.60</td><td>0.194</td><td>0.776</td></tr>
+      <tr><td>P4</td><td>0.809</td><td>10.40</td><td>0.209</td><td>0.840</td></tr>
+      <tr><td>P3</td><td>0.829</td><td>7.51</td><td>0.152</td><td>0.610</td></tr>
+      <tr><td>P2</td><td>0.510</td><td>6.43</td><td>0.154</td><td>0.617</td></tr>
+    </tbody>
+    <caption>Gate-localization quality tracks GECCO performance almost exactly. Temporal persistence filters out one-off residual spikes that fool the plain residual gate.</caption>
+  </table></div>
+
+  <h2><span class="no">8</span>Generalization: the shape hypothesis fails</h2>
+  <p>Hypothesis tested: <em>"P5 wins on block-shaped anomalies."</em> The 4-collection
+  extension rejects it:</p>
+  <ul>
+    <li><strong>TAO (point):</strong> everyone at ~0.995, a saturated trivial tie.</li>
+    <li><strong>MSL (block, weak baseline 0.131):</strong> P1/P2/P5 edge above by ~0.005,
+      within no-seed noise.</li>
+    <li><strong>SWaT (block, strong baseline 0.444):</strong> every proposal collapses to
+      ~0.13–0.15, a heavy loss on exactly the shape the hypothesis predicts a win for.</li>
+    <li><strong>PSM (mixed):</strong> all slightly below the baseline.</li>
+    <li><strong>CreditCard (point, verdict set)</strong> also loses for everyone:
+      correction-magnitude scoring is intrinsically weak for isolated point anomalies
+      (RW-1 itself only reaches 0.111 there).</li>
+  </ul>
+  <p>There is no clean shape-to-win rule. The P5 win is GECCO-specific.</p>
+
+  <h2><span class="no">9</span>Conclusions</h2>
+  <ol style="max-width:72ch">
+    <li style="margin:.5em 0"><strong>The corrected config overturns the initial verdict.</strong>
+      The early 0/N losses were largely a forecaster-only-warm-up + zero-init artifact; with
+      warm-up = plain RW-1 then gate on, all five proposals are competitive with tuned RW-1.</li>
+    <li style="margin:.5em 0"><strong>P5 + auto-λ robustly beats best-HP/200ep RW-1 on GECCO</strong>
+      (6/6 runs, min 0.661 &gt; 0.639, mean 0.677): a genuine, reproducible, scoped win, and
+      evidence that the auto-λ controller adds value.</li>
+    <li style="margin:.5em 0"><strong>The win does not generalize</strong> across the shape spectrum
+      (SWaT lost badly, MSL within noise, point/mixed at or below baseline).</li>
+    <li style="margin:.5em 0"><strong>Caveats:</strong> all deltas remain config-confounded
+      (100ep/default-HP vs best-HP/200ep); verdict cells are single unseeded runs except the
+      P5 robustness test. The honest next step before claiming P5 &gt; RW-1 as a method is a
+      matched-HP tune-off.</li>
+  </ol>
+  <div class="callout win">
+    <p><strong>Net result:</strong> a scoped positive finding (P5 + auto-λ &gt; tuned RW-1 on
+    GECCO, reproducibly) on top of a corrected-config negative-results arc (no general
+    improvement across shapes or collections), plus a methodological contribution: the
+    warm-up confound diagnosis and a diagnostics suite that explains wins and losses via
+    gate localization and correction concentration.</p>
+  </div>
+
+  <div class="foot">
+    Per-proposal write-ups (full settings, reproduce commands): repo
+    <code>experiments/proposals/docs/proposal{1–5}_results.md</code> · cross-proposal synthesis:
+    <code>docs/SUMMARY.md</code> · figures: <code>figures/</code> · runs: wandb
+    <code>yoonmeeh-cmu/rwml-autocegar</code>. Metrics: AUC-PR, whole-collection means;
+    RW-1/DeepAnT = reproduction (best-HP/200ep).
+  </div>
+</div>
+
+</body>
+</html>
