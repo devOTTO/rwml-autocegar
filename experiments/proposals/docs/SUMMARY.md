@@ -40,6 +40,23 @@ RW-1 / DeepAnT = reproduction per-collection means (best-HP/200ep). **bold** = b
 consistent win, not no-seed noise.
 
 ## Correction diagnostics (thesis §8.4, fixed, GECCO)
+
+How to read (all computed per timestep in the FINAL training epoch, against the
+ground-truth labels; labels are used for analysis only, never during training):
+
+- **gate->label AUC**: ROC-AUC when the per-timestep gate activation is used as if it
+  were an anomaly score. 0.5 = the gate fires randomly w.r.t. the true anomalies,
+  1.0 = it fires exactly at them. Measures how well the gate LOCALIZES anomalies.
+- **corr@anom/norm**: mean |correction| on anomaly timesteps / mean |correction| on
+  normal timesteps. Since the anomaly score IS mean |correction|, this is the score
+  contrast: e.g. 12.55 means anomalous points end up with 12.55x more correction than
+  normal points (higher = better separation = higher AUC-PR, all else equal).
+- **Overlap (prec)**: thesis Sec. 8.4 definition. A point is "high-correction" when its
+  |correction| exceeds the series' own 95th percentile (tau_C). Overlap = fraction of
+  high-correction points that are true anomalies (precision of the correction).
+- **Coverage (recall)**: fraction of true anomaly points that are high-correction
+  (recall of the correction; thesis Sec. 8.4 calls it AnomalyCoverage).
+
 | proposal | gate→label AUC | corr@anom/norm | Overlap (prec) | Coverage (recall) |
 |---|:--:|:--:|:--:|:--:|
 | P5 | 0.945 | 12.55 | 0.219 | 0.877 |

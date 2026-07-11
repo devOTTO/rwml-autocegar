@@ -35,6 +35,25 @@ Beats RW-1 on **0/3** verdict; only the trivial TAO tie on the extension (loses 
 AUC-ROC (fixed): OPP 0.717, GECCO 0.841, CC 0.614.
 
 ## Correction diagnostics (thesis §8.4, fixed)
+
+How to read (all computed per timestep in the FINAL training epoch, against the
+ground-truth labels; labels are used for analysis only, never during training):
+
+- **gate->label AUC**: ROC-AUC when the per-timestep gate activation is used as if it
+  were an anomaly score. 0.5 = the gate fires randomly w.r.t. the true anomalies,
+  1.0 = it fires exactly at them. Measures how well the gate LOCALIZES anomalies.
+  (Gate activation of a timestep = mean gate value of the training windows whose
+  prediction target is that timestep.)
+- **corr@anom/norm**: mean |correction| on anomaly timesteps / mean |correction| on
+  normal timesteps. Since the anomaly score IS mean |correction|, this is the score
+  contrast: e.g. a value of 10 means anomalous points end up with 10x more correction
+  than normal points (higher = better separation = higher AUC-PR, all else equal).
+- **Overlap (prec)**: thesis Sec. 8.4 definition. A point is "high-correction" when its
+  |correction| exceeds the series' own 95th percentile (tau_C). Overlap = fraction of
+  high-correction points that are true anomalies (precision of the correction).
+- **Coverage (recall)**: fraction of true anomaly points that are high-correction
+  (recall of the correction; thesis Sec. 8.4 calls it AnomalyCoverage).
+
 | collection | gate→label AUC | corr@anom/norm | Overlap | Coverage |
 |---|:--:|:--:|:--:|:--:|
 | GECCO | 0.829 | 7.51 | 0.152 | 0.610 |
