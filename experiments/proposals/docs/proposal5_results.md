@@ -1,6 +1,6 @@
 # Proposal 5 — Temporal-Persistence Confident-Error CEGAR: Results
 
-**Verdict: P5 is the only proposal that beats the best-HP/200ep RW-1 on a verdict
+**Result: P5 is the only proposal that beats the best-HP/200ep RW-1 on a screening
 collection — GECCO, robustly with auto-λ (6/6 runs, min 0.661 > 0.639). Fixed-λ ties.
 The win does NOT generalize across the shape spectrum.**
 
@@ -21,19 +21,19 @@ Score = `mean|correction|`.
 | baseline | reproduction best-HP/200ep → Δ config-confounded (indicative) |
 
 ## Results — all collections (AUC-PR; fixed / auto-λ)
-`set`: V = verdict, E = extension. **W** = fixed beats RW-1.
+Top three rows = the 3 screening collections picked at the start (GECCO / OPPORTUNITY / CreditCard); bottom four = the later shape-spectrum extension. **W** = fixed beats RW-1.
 
-| collection | shape | set | n | DeepAnT* | RW-1* | P5 fixed | auto-λ | Δ (fixed−RW-1) |
-|---|:-:|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
-| GECCO | block | V | 1 | 0.454 | 0.639 | 0.643 **W** | 0.677 **W** | +0.004 |
-| OPPORTUNITY | block | V | 8 | 0.272 | 0.138 | 0.114 | 0.111 | −0.024 |
-| CreditCard | point | V | 1 | 0.147 | 0.111 | 0.029 | 0.032 | −0.082 |
-| TAO | point | E | 13 | 0.996 | 0.995 | 0.996 | 0.995 | ≈0 (tie) |
-| PSM | mixed | E | 1 | 0.407 | 0.137 | 0.124 | 0.130 | −0.013 |
-| MSL | block | E | 16 | 0.116 | 0.131 | 0.137 **W** | 0.130 | +0.006 |
-| SWaT | block | E | 2 | 0.516 | 0.444 | 0.141 | 0.154 | −0.303 |
+| collection | shape | n | DeepAnT* | RW-1* | P5 fixed | auto-λ | Δ (fixed−RW-1) |
+|---|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | block | 1 | 0.454 | 0.639 | 0.643 **W** | 0.677 **W** | +0.004 |
+| OPPORTUNITY | block | 8 | 0.272 | 0.138 | 0.114 | 0.111 | −0.024 |
+| CreditCard | point | 1 | 0.147 | 0.111 | 0.029 | 0.032 | −0.082 |
+| TAO | point | 13 | 0.996 | 0.995 | 0.996 | 0.995 | ≈0 (tie) |
+| PSM | mixed | 1 | 0.407 | 0.137 | 0.124 | 0.130 | −0.013 |
+| MSL | block | 16 | 0.116 | 0.131 | 0.137 **W** | 0.130 | +0.006 |
+| SWaT | block | 2 | 0.516 | 0.444 | 0.141 | 0.154 | −0.303 |
 
-**Beats RW-1 on GECCO (the only verdict win of any proposal).** On the extension only MSL
+**Beats RW-1 on GECCO (the only screening-set win of any proposal).** On the extension only MSL
 edges it (+0.006, ~noise); SWaT (block) is a heavy loss → NOT a general block method.
 AUC-ROC (fixed): OPP 0.683, GECCO 0.953, CC 0.629.
 
@@ -85,7 +85,7 @@ Net: a scoped positive (GECCO) on a corrected-config negative-results arc.
 
 ![P5 AUC-PR comparison by collection](../figures/P5_comparison_bars.png)
 
-P5 is the only proposal with a bar above RW-1 on a real verdict collection: GECCO auto-λ (0.677 > 0.639), flagged above. Everywhere else it ties (TAO) or sits below (SWaT block, CreditCard point) — the win is GECCO-specific.
+P5 is the only proposal with a bar above RW-1 on a real screening collection: GECCO auto-λ (0.677 > 0.639), flagged above. Everywhere else it ties (TAO) or sits below (SWaT block, CreditCard point) — the win is GECCO-specific.
 
 ## Correction examples
 
@@ -93,7 +93,7 @@ P5 is the only proposal with a bar above RW-1 on a real verdict collection: GECC
 
 **Analysis.** P5 has the tightest localization of the five (GECCO gate→label 0.945, correction ≈12.6× normal, 88% coverage): the gate and `|correction|` light up almost exactly on the red band and stay flat elsewhere — the visual counterpart of its GECCO win. On the long SWaT block the correction spreads and misses, matching its collapse there.
 
-### Verdict collections
+### Screening collections
 
 **GECCO (block) — the win**
 

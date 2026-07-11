@@ -1,6 +1,6 @@
 # Proposal 4 — Dual-Gate Residual-and-Gradient RW-CEGAR: Results
 
-**Verdict: P4 does not beat the best-HP/200ep RW-1 (0/3), but it is the closest to RW-1
+**Result: P4 does not beat the best-HP/200ep RW-1 (0/3), but it is the closest to RW-1
 on GECCO after P5 (fixed 0.599, auto-λ 0.628; Δ−0.040).**
 
 ## What Proposal 4 is (docx spec, amplification-only Stage-1)
@@ -20,17 +20,17 @@ not implemented (amplification only). Score = `mean|correction|`.
 | baseline | reproduction best-HP/200ep → Δ config-confounded (indicative) |
 
 ## Results — all collections (AUC-PR; fixed / auto-λ)
-`set`: V = verdict, E = extension. **W** = fixed beats RW-1.
+Top three rows = the 3 screening collections picked at the start (GECCO / OPPORTUNITY / CreditCard); bottom four = the later shape-spectrum extension. **W** = fixed beats RW-1.
 
-| collection | shape | set | n | DeepAnT* | RW-1* | P4 fixed | auto-λ | Δ (fixed−RW-1) |
-|---|:-:|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
-| GECCO | block | V | 1 | 0.454 | 0.639 | 0.599 | 0.628 | −0.040 |
-| OPPORTUNITY | block | V | 8 | 0.272 | 0.138 | 0.107 | 0.110 | −0.031 |
-| CreditCard | point | V | 1 | 0.147 | 0.111 | 0.026 | 0.025 | −0.085 |
-| TAO | point | E | 13 | 0.996 | 0.995 | 0.995 | 0.995 | ≈0 (tie) |
-| PSM | mixed | E | 1 | 0.407 | 0.137 | 0.125 | 0.128 | −0.012 |
-| MSL | block | E | 16 | 0.116 | 0.131 | 0.122 | 0.121 | −0.009 |
-| SWaT | block | E | 2 | 0.516 | 0.444 | 0.143 | 0.149 | −0.301 |
+| collection | shape | n | DeepAnT* | RW-1* | P4 fixed | auto-λ | Δ (fixed−RW-1) |
+|---|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | block | 1 | 0.454 | 0.639 | 0.599 | 0.628 | −0.040 |
+| OPPORTUNITY | block | 8 | 0.272 | 0.138 | 0.107 | 0.110 | −0.031 |
+| CreditCard | point | 1 | 0.147 | 0.111 | 0.026 | 0.025 | −0.085 |
+| TAO | point | 13 | 0.996 | 0.995 | 0.995 | 0.995 | ≈0 (tie) |
+| PSM | mixed | 1 | 0.407 | 0.137 | 0.125 | 0.128 | −0.012 |
+| MSL | block | 16 | 0.116 | 0.131 | 0.122 | 0.121 | −0.009 |
+| SWaT | block | 2 | 0.516 | 0.444 | 0.143 | 0.149 | −0.301 |
 
 Beats RW-1 on **0/3**; no extension win either (loses MSL/SWaT/PSM, TAO tie). GECCO is the
 closest of the non-P5 proposals (auto-λ 0.628). AUC-ROC (fixed): OPP 0.671, GECCO 0.935, CC 0.637.
@@ -82,7 +82,7 @@ P4's dual (residual × input-gradient) gate is the runner-up on GECCO — auto-�
 
 **Analysis.** The dual residual×gradient gate localizes the GECCO anomaly well (gate→label ≈0.81) and concentrates correction (≈10.4×) — the second strongest — but still lands under the tuned RW-1.
 
-### Verdict collections
+### Screening collections
 
 **GECCO (block) — the win**
 

@@ -1,6 +1,6 @@
 # Proposal 2 — Uncertainty-Aware Residual CEGAR: Results
 
-**Verdict: P2 does not beat the best-HP/200ep RW-1 (0/3). Near-tie on OPPORTUNITY; well
+**Result: P2 does not beat the best-HP/200ep RW-1 (0/3). Near-tie on OPPORTUNITY; well
 below on GECCO (weakest gate localization of the five).**
 
 ## What Proposal 2 is (docx-faithful)
@@ -19,19 +19,19 @@ Only `_compute_signals` overridden. Score = `mean|correction|`.
 | baseline | reproduction best-HP/200ep → Δ config-confounded (indicative) |
 
 ## Results — all collections (AUC-PR; fixed / auto-λ)
-`set`: V = verdict, E = extension. **W** = fixed beats RW-1.
+Top three rows = the 3 screening collections picked at the start (GECCO / OPPORTUNITY / CreditCard); bottom four = the later shape-spectrum extension. **W** = fixed beats RW-1.
 
-| collection | shape | set | n | DeepAnT* | RW-1* | P2 fixed | auto-λ | Δ (fixed−RW-1) |
-|---|:-:|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
-| GECCO | block | V | 1 | 0.454 | 0.639 | 0.380 | 0.383 | −0.259 |
-| OPPORTUNITY | block | V | 8 | 0.272 | 0.138 | 0.125 | 0.125 | −0.013 |
-| CreditCard | point | V | 1 | 0.147 | 0.111 | 0.025 | 0.025 | −0.086 |
-| TAO | point | E | 13 | 0.996 | 0.995 | 0.995 | 0.995 | ≈0 (tie) |
-| PSM | mixed | E | 1 | 0.407 | 0.137 | 0.116 | 0.115 | −0.021 |
-| MSL | block | E | 16 | 0.116 | 0.131 | 0.135 **W** | 0.134 **W** | +0.004 |
-| SWaT | block | E | 2 | 0.516 | 0.444 | 0.133 | 0.136 | −0.311 |
+| collection | shape | n | DeepAnT* | RW-1* | P2 fixed | auto-λ | Δ (fixed−RW-1) |
+|---|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | block | 1 | 0.454 | 0.639 | 0.380 | 0.383 | −0.259 |
+| OPPORTUNITY | block | 8 | 0.272 | 0.138 | 0.125 | 0.125 | −0.013 |
+| CreditCard | point | 1 | 0.147 | 0.111 | 0.025 | 0.025 | −0.086 |
+| TAO | point | 13 | 0.996 | 0.995 | 0.995 | 0.995 | ≈0 (tie) |
+| PSM | mixed | 1 | 0.407 | 0.137 | 0.116 | 0.115 | −0.021 |
+| MSL | block | 16 | 0.116 | 0.131 | 0.135 **W** | 0.134 **W** | +0.004 |
+| SWaT | block | 2 | 0.516 | 0.444 | 0.133 | 0.136 | −0.311 |
 
-Beats RW-1 on **0/3** verdict; MSL edges it (+0.004, ~noise), TAO tie, SWaT/PSM lose.
+Beats RW-1 on **0/3** of the screening collections; MSL edges it (+0.004, ~noise), TAO tie, SWaT/PSM lose.
 auto-λ flat (gate weak → nothing to amplify). AUC-ROC (fixed): OPP 0.708, GECCO 0.838, CC 0.605.
 
 ## Correction diagnostics (thesis §8.4, fixed)
@@ -73,7 +73,7 @@ Does not beat tuned RW-1; weakest gate → move to Proposal 3.
 
 ![P2 AUC-PR comparison by collection](../figures/P2_comparison_bars.png)
 
-P2's MC-dropout uncertainty gate is the weakest of the five: GECCO sits far below RW-1 because the uncertainty signal barely localizes anomalies, and no verdict collection is competitive.
+P2's MC-dropout uncertainty gate is the weakest of the five: GECCO sits far below RW-1 because the uncertainty signal barely localizes anomalies, and no screening collection is competitive.
 
 ## Correction examples
 
@@ -81,7 +81,7 @@ P2's MC-dropout uncertainty gate is the weakest of the five: GECCO sits far belo
 
 **Analysis.** The gate is driven by MC-dropout uncertainty, which on GECCO barely separates anomalies from normal (gate→label ≈0.51, near chance), so the correction is diffuse — weak, spread-out spikes rather than a tight block.
 
-### Verdict collections
+### Screening collections
 
 **GECCO (block) — the win**
 

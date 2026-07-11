@@ -2,7 +2,7 @@
 
 **Headline: under the corrected config, P5 (temporal-persistence) with auto-λ robustly
 beats the best-HP/200ep RW-1 on GECCO (6/6 runs, min 0.661 > 0.639). Fixed-λ P5 ties.
-The other proposals are competitive but do not beat RW-1 on the verdict set.**
+The other proposals are competitive but do not beat RW-1 on the screening set.**
 
 ## Config (corrected)
 - Warm-up = **plain RW-1** (correction trained, gate OFF) for `warmup=10`, then the CEGAR
@@ -13,7 +13,7 @@ The other proposals are competitive but do not beat RW-1 on the verdict set.**
   100ep/default-HP, the RW-1 baseline is best-HP/200ep — so magnitudes are indicative.
 - Evaluation unit = whole collection (opportunity = mean of 8 series; gecco/creditcard n=1).
 
-## Verdict set (AUC-PR; fixed / auto-λ)
+## Screening set (AUC-PR; fixed / auto-λ)
 RW-1 / DeepAnT = reproduction per-collection means (best-HP/200ep). **bold** = beats RW-1.
 
 | proposal | OPPORTUNITY (RW-1 0.138) | GECCO (RW-1 0.639) | CreditCard (RW-1 0.111) |
@@ -94,7 +94,7 @@ So P5 does **not** win on block in general (it loses SWaT badly and near-ties OP
 its GECCO win does not generalize to a shape rule.
 
 ## Decision (final)
-1. **The corrected config overturns the old "gating never helps" verdict** — the earlier
+1. **The corrected config overturns the old "gating never helps" conclusion** — the earlier
    0/N was largely a forecaster-only-warm-up + zero-init artifact; with warm-up = plain
    RW-1 then gate (neg_x), all proposals are competitive with the tuned RW-1.
 2. **P5 + auto-λ robustly beats the best-HP/200ep RW-1 on GECCO** (6/6 runs, min 0.661 >

@@ -1,6 +1,6 @@
 # Proposal 1 — Residual-Gated RW-CEGAR: Results
 
-**Verdict: P1 does not beat the best-HP/200ep RW-1 (0/3 on the verdict set; near-tie on
+**Result: P1 does not beat the best-HP/200ep RW-1 (0/3 on the screening set; near-tie on
 OPPORTUNITY, close on GECCO). The old "clear loss" was largely a config artifact.**
 
 ## What Proposal 1 is
@@ -20,20 +20,20 @@ Score = `mean|correction|`.
 | baseline | RW-1 / DeepAnT = reproduction per-collection means (**best-HP, 200ep**) → Δ is config-confounded on the epoch/HP axis, indicative |
 
 ## Results — all collections (AUC-PR; fixed / auto-λ)
-`set`: V = verdict, E = shape-spectrum extension. **W** = fixed beats RW-1.
+Top three rows = the 3 screening collections picked at the start (GECCO / OPPORTUNITY / CreditCard); bottom four = the later shape-spectrum extension. **W** = fixed beats RW-1.
 
-| collection | shape | set | n | DeepAnT* | RW-1* | P1 fixed | auto-λ | Δ (fixed−RW-1) |
-|---|:-:|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
-| GECCO | block | V | 1 | 0.454 | 0.639 | 0.565 | 0.618 | −0.074 |
-| OPPORTUNITY | block | V | 8 | 0.272 | 0.138 | 0.123 | 0.113 | −0.015 |
-| CreditCard | point | V | 1 | 0.147 | 0.111 | 0.032 | 0.035 | −0.079 |
-| TAO | point | E | 13 | 0.996 | 0.995 | 0.995 | 0.995 | ≈0 (tie) |
-| PSM | mixed | E | 1 | 0.407 | 0.137 | 0.125 | 0.126 | −0.012 |
-| MSL | block | E | 16 | 0.116 | 0.131 | 0.136 **W** | 0.118 | +0.005 |
-| SWaT | block | E | 2 | 0.516 | 0.444 | 0.139 | 0.131 | −0.305 |
+| collection | shape | n | DeepAnT* | RW-1* | P1 fixed | auto-λ | Δ (fixed−RW-1) |
+|---|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | block | 1 | 0.454 | 0.639 | 0.565 | 0.618 | −0.074 |
+| OPPORTUNITY | block | 8 | 0.272 | 0.138 | 0.123 | 0.113 | −0.015 |
+| CreditCard | point | 1 | 0.147 | 0.111 | 0.032 | 0.035 | −0.079 |
+| TAO | point | 13 | 0.996 | 0.995 | 0.995 | 0.995 | ≈0 (tie) |
+| PSM | mixed | 1 | 0.407 | 0.137 | 0.125 | 0.126 | −0.012 |
+| MSL | block | 16 | 0.116 | 0.131 | 0.136 **W** | 0.118 | +0.005 |
+| SWaT | block | 2 | 0.516 | 0.444 | 0.139 | 0.131 | −0.305 |
 
-Beats RW-1 on **0/3** verdict; on the extension only MSL edges it (+0.005, ~noise) and TAO
-ties; SWaT/PSM lose. AUC-ROC (fixed, verdict): OPPORTUNITY 0.703, GECCO 0.918, CreditCard 0.716.
+Beats RW-1 on **0/3** of the screening collections; on the extension only MSL edges it (+0.005, ~noise) and TAO
+ties; SWaT/PSM lose. AUC-ROC (fixed, screening set): OPPORTUNITY 0.703, GECCO 0.918, CreditCard 0.716.
 
 ## Correction diagnostics (thesis §8.4, fixed)
 
@@ -75,7 +75,7 @@ Competitive but does not beat tuned RW-1 → move to Proposal 2.
 
 ![P1 AUC-PR comparison by collection](../figures/P1_comparison_bars.png)
 
-P1's residual-wrongness gate tracks RW-1 closely on GECCO (fixed just under the tuned baseline, auto-λ nearly level) but never clears it on a verdict collection; the only bars above RW-1 are the trivial (TAO) and weak-baseline (MSL) cases.
+P1's residual-wrongness gate tracks RW-1 closely on GECCO (fixed just under the tuned baseline, auto-λ nearly level) but never clears it on a screening collection; the only bars above RW-1 are the trivial (TAO) and weak-baseline (MSL) cases.
 
 ## Correction examples
 
@@ -83,7 +83,7 @@ P1's residual-wrongness gate tracks RW-1 closely on GECCO (fixed just under the 
 
 **Analysis.** On GECCO the correction concentrates sharply on the anomaly (≈11.6× the normal level), flattening the spike — the mechanism works, but fixed-λ contrast stays just short of the tuned RW-1. On CreditCard (point) the correction barely fires, matching its low score.
 
-### Verdict collections
+### Screening collections
 
 **GECCO (block) — the win**
 

@@ -1,6 +1,6 @@
 # Proposal 3 — RW-Correction-Consistency CEGAR: Results
 
-**Verdict: P3 does not beat the best-HP/200ep RW-1 (0/3). Closest near-tie on OPPORTUNITY
+**Result: P3 does not beat the best-HP/200ep RW-1 (0/3). Closest near-tie on OPPORTUNITY
 (Δ−0.003); GECCO well below.**
 
 ## What Proposal 3 is (docx-faithful, full)
@@ -19,19 +19,19 @@ Signal = the correction's own behaviour. `d_t=mean_feat|C_t|`, `v_t=cos(ΔC^e,Δ
 | baseline | reproduction best-HP/200ep → Δ config-confounded (indicative) |
 
 ## Results — all collections (AUC-PR; fixed / auto-λ)
-`set`: V = verdict, E = extension. **W** = fixed beats RW-1.
+Top three rows = the 3 screening collections picked at the start (GECCO / OPPORTUNITY / CreditCard); bottom four = the later shape-spectrum extension. **W** = fixed beats RW-1.
 
-| collection | shape | set | n | DeepAnT* | RW-1* | P3 fixed | auto-λ | Δ (fixed−RW-1) |
-|---|:-:|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
-| GECCO | block | V | 1 | 0.454 | 0.639 | 0.379 | 0.386 | −0.260 |
-| OPPORTUNITY | block | V | 8 | 0.272 | 0.138 | 0.135 | 0.131 | −0.003 |
-| CreditCard | point | V | 1 | 0.147 | 0.111 | 0.027 | 0.026 | −0.084 |
-| TAO | point | E | 13 | 0.996 | 0.995 | 0.996 | 0.996 | ≈0 (tie) |
-| PSM | mixed | E | 1 | 0.407 | 0.137 | 0.118 | 0.118 | −0.019 |
-| MSL | block | E | 16 | 0.116 | 0.131 | 0.128 | 0.130 | −0.003 |
-| SWaT | block | E | 2 | 0.516 | 0.444 | 0.141 | 0.143 | −0.303 |
+| collection | shape | n | DeepAnT* | RW-1* | P3 fixed | auto-λ | Δ (fixed−RW-1) |
+|---|:-:|:-:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | block | 1 | 0.454 | 0.639 | 0.379 | 0.386 | −0.260 |
+| OPPORTUNITY | block | 8 | 0.272 | 0.138 | 0.135 | 0.131 | −0.003 |
+| CreditCard | point | 1 | 0.147 | 0.111 | 0.027 | 0.026 | −0.084 |
+| TAO | point | 13 | 0.996 | 0.995 | 0.996 | 0.996 | ≈0 (tie) |
+| PSM | mixed | 1 | 0.407 | 0.137 | 0.118 | 0.118 | −0.019 |
+| MSL | block | 16 | 0.116 | 0.131 | 0.128 | 0.130 | −0.003 |
+| SWaT | block | 2 | 0.516 | 0.444 | 0.141 | 0.143 | −0.303 |
 
-Beats RW-1 on **0/3** verdict; only the trivial TAO tie on the extension (loses MSL/SWaT/PSM).
+Beats RW-1 on **0/3** of the screening collections; only the trivial TAO tie on the extension (loses MSL/SWaT/PSM).
 AUC-ROC (fixed): OPP 0.717, GECCO 0.841, CC 0.614.
 
 ## Correction diagnostics (thesis §8.4, fixed)
@@ -81,7 +81,7 @@ P3's consistency gate lands mid-pack — close to RW-1 on the low-baseline colle
 
 **Analysis.** The consistency gate fires moderately at anomalies; correction concentration on GECCO (≈7.5×) is lower than P1/P4/P5, consistent with its weaker score.
 
-### Verdict collections
+### Screening collections
 
 **GECCO (block) — the win**
 
