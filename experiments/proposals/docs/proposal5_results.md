@@ -35,6 +35,9 @@ Top three rows = the 3 screening collections picked at the start (GECCO / OPPORT
 
 **Beats RW-1 on GECCO (the only screening-set win of any proposal).** On the extension only MSL
 edges it (+0.006, ~noise); SWaT (block) is a heavy loss → NOT a general block method.
+The SWaT gap is likely the config axis rather than gating: it is uniform across all
+five gates, and SWaT's best-HP baseline uses `l1_weight` 0.1/1.0 vs our fixed 0.001
+(see SUMMARY, shape-spectrum section, for the evidence and the cheap confirm run).
 AUC-ROC (fixed): OPP 0.683, GECCO 0.953, CC 0.629.
 
 ## GECCO robustness (6 runs each, no fixed seed)

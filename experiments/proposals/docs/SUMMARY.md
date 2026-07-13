@@ -113,6 +113,12 @@ shape→win rule:
   no-seed noise level, not a confirmed win.
 - **SWaT** (block, strong RW-1 0.444): **everyone collapses to ~0.13–0.15** — a heavy
   loss on a block collection, directly contradicting "P5 wins on block".
+  **Likely cause: the config axis, not gating.** The gap is uniform across all five
+  gates (including P2, whose gate is nearly inert), and SWaT is where the baseline's
+  best HP diverges most from our fixed config: its per-file best `l1_weight` is 0.1
+  (id_1) and 1.0 (id_2) vs our fixed 0.001
+  (`rw/reproduction/summary_rw1_besthp.csv`). A matched-config plain RW-1 run on
+  SWaT's 2 series (cheap) would confirm or refute this.
 - **PSM** (mixed): all slightly below RW-1.
 
 So P5 does **not** win on block in general (it loses SWaT badly and near-ties OPPORTUNITY);
