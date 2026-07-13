@@ -83,10 +83,11 @@ P5 has the best gate localization (GECCO 0.945) and correction concentration/cov
 the five — consistent with it being the winner on GECCO.
 
 ## Decision
-**End of the P1–P5 arc.** Corrected config overturns the old "gating never helps"; P5+auto-λ
-is a genuine, reproducible win over tuned RW-1 on GECCO. It does not generalize (SWaT block
-lost, MSL within noise, point/mixed ≈/below RW-1); deltas config-confounded (epoch/HP).
-Net: a scoped positive (GECCO) on a corrected-config negative-results arc.
+**End of the P1–P5 screening arc.** Under the corrected schedule (RW-1 from epoch 1, only
+the gate waits through warm-up) P5+auto-λ is a reproducible win over tuned RW-1 on GECCO.
+It did not generalize under the fixed config (MSL within noise, point/mixed ≈/below RW-1,
+SWaT gap likely the config axis); deltas config-confounded (epoch/HP). Next: per-dataset
+P5 tuning (λ in the grid) vs per-file best-HP RW-1, then the full benchmark if competitive.
 
 
 ## Performance (AUC-PR by collection)

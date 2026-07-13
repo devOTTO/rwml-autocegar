@@ -125,10 +125,11 @@ So P5 does **not** win on block in general (it loses SWaT badly and near-ties OP
 its GECCO win does not generalize to a shape rule.
 
 ## Decision and next steps
-1. **The corrected config overturns the old "gating never helps" conclusion**: the earlier
-   0/N was largely a schedule artifact (both RW-1 and the gate deferred to after warm-up);
-   with RW-1 training from epoch 1 and only the gate waiting (neg_x init), all proposals
-   are competitive with the tuned RW-1.
+1. **Schedule fix first.** In the first implementation, both RW-1 and the CEGAR gate
+   started only after the 10-epoch warm-up; those runs were discarded. Under the corrected
+   schedule (RW-1 trains from epoch 1 as in the thesis, neg_x init, only the gate waits
+   through warm-up), all proposals are competitive with the tuned RW-1, so every result
+   here is from the re-run.
 2. **P5 + auto-λ robustly beats the best-HP/200ep RW-1 on GECCO** (6/6 runs, min 0.661 >
    0.639), a reproducible win. Open question on its source: λ sat at the `lam_max = 1.5`
    cap in every auto run (see "What auto-λ actually did"), so auto-vs-fixed there is

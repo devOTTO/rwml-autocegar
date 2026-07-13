@@ -92,16 +92,17 @@
   <div class="eyebrow">Auto-CEGAR × RW-ML · TSB-AD-M · Full Report</div>
   <h1>Gating the RW-1 correction gradient: the complete P1–P5 experimental record</h1>
   <p class="lede">Companion to the <em>Proposal 1–5 Results</em> summary page: the full record
-  of the study, from the thesis reproduction it stands on, through the warm-up config fix
-  that overturned the first verdict, to per-proposal results, robustness runs, and the
-  shape-spectrum generalization test.</p>
+  of the study, from the thesis reproduction it stands on, through the warm-up schedule fix
+  and re-run, to per-proposal results, robustness runs, and the shape-spectrum
+  generalization test.</p>
 
   <div class="callout win">
     <h3>Bottom line</h3>
     <ul style="margin:.4em 0">
-      <li><strong>The first "gating never helps" verdict was a config artifact.</strong>
-        With warm-up = plain RW-1 (gate off) then gate on, and <code>neg_x</code> init,
-        all five proposals are competitive with the tuned RW-1.</li>
+      <li><strong>Schedule fix first.</strong> In the first implementation both RW-1 and
+        the gate started only after warm-up; those runs were discarded. With RW-1 training
+        from epoch 1 and only the gate waiting (<code>neg_x</code> init), all five
+        proposals are competitive with the tuned RW-1.</li>
       <li><strong class="win">P5 (temporal persistence) + auto-λ beats the best-HP/200ep RW-1
         on GECCO in 6 of 6 repeat runs</strong> (min 0.661 &gt; 0.639, mean 0.677). The only
         verdict-set win of any proposal, and it is reproducible.</li>
@@ -188,10 +189,10 @@
   log offline and are synced afterwards.</p>
 
   <h2><span class="no">4</span>The warm-up config fix</h2>
-  <p>The first screening round used <strong>forecaster-only warm-up</strong> (correction OFF
-  during warm-up) with <code>correction_init='zero'</code>. Under that config every proposal
-  lost to RW-1, with deltas as large as −0.14 on GECCO: the original "P1 lost 0/3, gating
-  never helps" verdict.</p>
+  <p>In the first implementation, both the RW-1 correction and the CEGAR gate started only
+  after the 10-epoch warm-up (forecaster-only warm-up, <code>correction_init='zero'</code>).
+  Under that schedule every proposal lost to RW-1, with deltas as large as −0.14 on
+  GECCO.</p>
   <p>Diagnosis showed this was largely a <strong>config artifact</strong>, not a property of
   gating: starting the correction late and from zero deprives it of the training budget and
   the Algorithm-2 dynamics that plain RW-1 enjoys. The corrected config keeps warm-up but
@@ -373,9 +374,10 @@
 
   <h2><span class="no">9</span>Conclusions</h2>
   <ol style="max-width:72ch">
-    <li style="margin:.5em 0"><strong>The corrected config overturns the initial verdict.</strong>
-      The early 0/N losses were largely a forecaster-only-warm-up + zero-init artifact; with
-      warm-up = plain RW-1 then gate on, all five proposals are competitive with tuned RW-1.</li>
+    <li style="margin:.5em 0"><strong>Schedule fix first.</strong> In the first implementation
+      both RW-1 and the gate started only after warm-up; those runs were discarded. With RW-1
+      training from epoch 1 and only the gate waiting, all five proposals are competitive
+      with tuned RW-1.</li>
     <li style="margin:.5em 0"><strong>P5 + auto-λ robustly beats best-HP/200ep RW-1 on GECCO</strong>
       (6/6 runs, min 0.661 &gt; 0.639, mean 0.677): a genuine, reproducible, scoped win.
       Whether the value comes from adaptivity itself is open: λ reached the 1.5 cap in
