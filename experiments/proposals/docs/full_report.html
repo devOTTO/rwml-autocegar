@@ -327,6 +327,21 @@
     <caption>Fixed-λ straddles the baseline. Auto-λ clears it on every run, worst run 0.661 vs baseline 0.639: a genuine, reproducible win, and a win for the auto-λ controller specifically (it also lifts P1 and P4 on GECCO).</caption>
   </table></div>
 
+  <h3>What auto-λ actually did (controller logs)</h3>
+  <p>Final-epoch λ/τ of every corrected auto-λ run: <strong>τ never adapted</strong>
+  (all experiments ran <code>tau_mode</code> fixed, so τ stayed at 2.0 everywhere; the
+  valley-detection auto-τ controller was never switched on in this arc). λ
+  <strong>saturated at the <code>lam_max = 1.5</code> cap</strong> in essentially every
+  P1/P4/P5 run, including all 6 GECCO robustness runs; P2 was pulled DOWN to ≈ 0.64
+  (the tail-ratio controller de-amplifies its non-selective gate); P3 was the only
+  proposal with genuinely series-dependent final values (0.64 to 1.5). The controller's
+  direction tracks gate selectivity, matching the diagnostics ranking. Because λ hits
+  the cap for P1/P4/P5, <strong>in these runs the auto-vs-fixed comparison is
+  effectively λ ≈ 1.5 vs λ = 1</strong> (an observation about our runs, not a judgment
+  on the controller). Whether the lift reflects adaptivity or simply a higher λ is a
+  question for the Auto-CEGAR controller side; on our side a cheap fixed λ = 1.5 GECCO
+  six-run ablation and a <code>lam_max</code> sweep (2 to 3) would disentangle it.</p>
+
   <h2><span class="no">7</span>Why P5 wins: cross-proposal diagnostics (GECCO, fixed)</h2>
   <div class="tbl"><table>
     <thead><tr><th>Proposal</th><th>gate→label AUC</th><th>corr @anom/norm</th><th>Overlap (prec)</th><th>Coverage (recall)</th></tr></thead>
@@ -362,8 +377,11 @@
       The early 0/N losses were largely a forecaster-only-warm-up + zero-init artifact; with
       warm-up = plain RW-1 then gate on, all five proposals are competitive with tuned RW-1.</li>
     <li style="margin:.5em 0"><strong>P5 + auto-λ robustly beats best-HP/200ep RW-1 on GECCO</strong>
-      (6/6 runs, min 0.661 &gt; 0.639, mean 0.677): a genuine, reproducible, scoped win, and
-      evidence that the auto-λ controller adds value.</li>
+      (6/6 runs, min 0.661 &gt; 0.639, mean 0.677): a genuine, reproducible, scoped win.
+      Whether the value comes from adaptivity itself is open: λ reached the 1.5 cap in
+      every run, so on our side a fixed λ = 1.5 ablation would separate "adaptive λ"
+      from "simply higher λ"; the interpretation is deferred to the Auto-CEGAR
+      controller side.</li>
     <li style="margin:.5em 0"><strong>The win does not generalize</strong> across the shape spectrum
       (SWaT lost badly, MSL within noise, point/mixed at or below baseline).</li>
     <li style="margin:.5em 0"><strong>Caveats:</strong> all deltas remain config-confounded
