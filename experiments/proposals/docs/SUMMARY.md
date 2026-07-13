@@ -55,11 +55,14 @@ run summaries):
 - **P3: λ spreads over 0.64-1.5** (msl ≈ 1.0-1.2, opportunity ≈ 1.25-1.45, tao 1.5),
   the only proposal where the controller produced genuinely series-dependent values.
 
-Reading: the controller's direction tracks gate selectivity, matching the diagnostics
-ranking. But because λ hits the cap for P1/P4/P5, **the auto-λ GECCO lift is not yet
-evidence of adaptivity per se: it may simply mean "λ = 1.5 beats λ = 1"**. Two follow-ups
-would disentangle this: (a) a fixed λ = 1.5 GECCO 6-run ablation vs auto-λ (0.677), and
-(b) a `lam_max` sweep (2-3), since the cap is currently the binding constraint.
+Reading (observation, not a judgment on the controller): the controller's direction tracks
+gate selectivity, matching the diagnostics ranking. Because λ reaches the `lam_max = 1.5`
+cap for P1/P4/P5, **in our runs the auto-vs-fixed comparison there is effectively λ ≈ 1.5
+vs λ = 1**. Whether the GECCO lift reflects adaptivity or simply a higher λ is not settled
+by these runs; that interpretation — and whether `lam_max` should change — is a question
+for the Auto-CEGAR controller side. Two follow-ups on our side would disentangle it:
+(a) a fixed λ = 1.5 GECCO 6-run ablation vs auto-λ (0.677), and (b) a `lam_max` sweep (2-3),
+since the cap is currently the binding constraint.
 
 ## Correction diagnostics (thesis §8.4, fixed, GECCO)
 
