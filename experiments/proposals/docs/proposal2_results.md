@@ -32,7 +32,8 @@ Top three rows = the 3 screening collections picked at the start (GECCO / OPPORT
 | SWaT | block | 2 | 0.516 | 0.444 | 0.133 | 0.136 | −0.311 |
 
 Beats RW-1 on **0/3** of the screening collections; MSL edges it (+0.004, ~noise), TAO tie, SWaT/PSM lose.
-auto-λ flat (gate weak → nothing to amplify). AUC-ROC (fixed): OPP 0.708, GECCO 0.838, CC 0.605.
+auto-λ flat (gate weak → nothing to amplify; the tail-ratio controller in fact
+pulled λ DOWN to ≈ 0.64 on most series by the final epoch). AUC-ROC (fixed): OPP 0.708, GECCO 0.838, CC 0.605.
 
 ## Correction diagnostics (thesis §8.4, fixed)
 

@@ -33,6 +33,8 @@ Top three rows = the 3 screening collections picked at the start (GECCO / OPPORT
 
 Beats RW-1 on **0/3** of the screening collections; only the trivial TAO tie on the extension (loses MSL/SWaT/PSM).
 AUC-ROC (fixed): OPP 0.717, GECCO 0.841, CC 0.614.
+Under auto-λ, P3 is the only proposal where the controller produced genuinely
+series-dependent final λ values (0.64-1.5); P1/P4/P5 saturate at `lam_max = 1.5`.
 
 ## Correction diagnostics (thesis §8.4, fixed)
 

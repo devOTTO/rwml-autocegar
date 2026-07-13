@@ -44,6 +44,9 @@ AUC-ROC (fixed): OPP 0.683, GECCO 0.953, CC 0.629.
 | **auto-λ** | 0.661, 0.672, 0.672, 0.682, 0.683, 0.690 | **0.677** | **6/6 (min 0.661 — robust win)** |
 
 Fixed straddles RW-1 (tie); **auto-λ beats it on every run** — a real, reproducible win.
+Note: in all 6 auto-λ runs the controller saturated at `lam_max = 1.5` by the final
+epoch (τ stayed fixed at 2.0), so part of this lift may be "λ = 1.5 beats λ = 1"
+rather than adaptivity; see SUMMARY "What auto-λ actually did" for the ablation plan.
 
 ## Correction diagnostics (thesis §8.4, fixed)
 

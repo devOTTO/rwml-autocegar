@@ -39,6 +39,28 @@ RW-1 / DeepAnT = reproduction per-collection means (best-HP/200ep). **bold** = b
 → Fixed P5 straddles RW-1 (statistical tie). **auto-λ P5 beats RW-1 on every run** — a real,
 consistent win, not no-seed noise.
 
+## What auto-λ actually did (controller behavior)
+
+Final-epoch λ/τ of every corrected auto-λ run (`train/lam`, `train/tau` in the wandb
+run summaries):
+
+- **τ never adapted.** All experiments ran `tau_mode` fixed, so τ stayed at its initial
+  value (2.0) in every run; the valley-detection auto-τ controller is wired but was
+  never switched on in this arc.
+- **P1 / P4 / P5: λ saturates at the `lam_max = 1.5` cap** on essentially every series
+  (including all 6 P5 GECCO robustness runs; single exception P1 msl_id12 at 1.42).
+- **P2: λ is pulled DOWN to ≈ 0.64** on most series (all of gecco/msl/tao/creditcard;
+  only part of opportunity reaches 1.5). The tail-ratio controller de-amplifies a
+  non-selective gate, consistent with P2 having the weakest gate localization.
+- **P3: λ spreads over 0.64-1.5** (msl ≈ 1.0-1.2, opportunity ≈ 1.25-1.45, tao 1.5),
+  the only proposal where the controller produced genuinely series-dependent values.
+
+Reading: the controller's direction tracks gate selectivity, matching the diagnostics
+ranking. But because λ hits the cap for P1/P4/P5, **the auto-λ GECCO lift is not yet
+evidence of adaptivity per se: it may simply mean "λ = 1.5 beats λ = 1"**. Two follow-ups
+would disentangle this: (a) a fixed λ = 1.5 GECCO 6-run ablation vs auto-λ (0.677), and
+(b) a `lam_max` sweep (2-3), since the cap is currently the binding constraint.
+
 ## Correction diagnostics (thesis §8.4, fixed, GECCO)
 
 How to read (all computed per timestep in the FINAL training epoch, against the
