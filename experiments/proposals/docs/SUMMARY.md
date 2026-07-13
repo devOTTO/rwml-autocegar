@@ -124,17 +124,29 @@ shape→win rule:
 So P5 does **not** win on block in general (it loses SWaT badly and near-ties OPPORTUNITY);
 its GECCO win does not generalize to a shape rule.
 
-## Decision (final)
-1. **The corrected config overturns the old "gating never helps" conclusion** — the earlier
-   0/N was largely a forecaster-only-warm-up + zero-init artifact; with warm-up = plain
-   RW-1 then gate (neg_x), all proposals are competitive with the tuned RW-1.
+## Decision and next steps
+1. **The corrected config overturns the old "gating never helps" conclusion**: the earlier
+   0/N was largely a schedule artifact (both RW-1 and the gate deferred to after warm-up);
+   with RW-1 training from epoch 1 and only the gate waiting (neg_x init), all proposals
+   are competitive with the tuned RW-1.
 2. **P5 + auto-λ robustly beats the best-HP/200ep RW-1 on GECCO** (6/6 runs, min 0.661 >
-   0.639) — a genuine, reproducible win.
-3. **But it does not generalize**: across the shape spectrum there is no consistent
-   pattern (SWaT block lost, MSL win within noise, point/mixed ≈ or below RW-1). The win
-   is GECCO-specific, not a shape-driven method advantage.
-4. **Caveat**: all deltas are still config-confounded on the epoch/HP axis (proposals
-   100ep/default-HP vs RW-1 best-HP/200ep), so they are indicative.
+   0.639), a reproducible win. Open question on its source: λ sat at the `lam_max = 1.5`
+   cap in every auto run (see "What auto-λ actually did"), so auto-vs-fixed there is
+   effectively λ ≈ 1.5 vs λ = 1; the per-dataset tuning below settles this.
+3. **The win did not generalize under the fixed config**: across the shape spectrum there
+   is no consistent pattern (MSL within noise, point/mixed ≈ or below RW-1; the uniform
+   SWaT gap is likely the config axis rather than gating, see the shape-spectrum note).
+4. **All deltas so far are config-confounded** on the epoch/HP axis (proposals
+   100ep/default-HP vs RW-1 best-HP/200ep), so they are indicative, not a like-for-like
+   tune-off.
 
-**Net**: a scoped positive result (P5+auto beats tuned RW-1 on GECCO) on top of a
-corrected-config negative-results arc (no general win across shapes/collections).
+**Next steps (agreed direction)**:
+(a) per-dataset P5 hyperparameter tuning (λ in the grid) on the collections studied here,
+against the per-file best-HP RW-1 from the reproduction; this makes the comparison fully
+like-for-like and separates "higher λ" from the auto controller at the same time;
+(b) if P5 stays competitive, run it on the full 200-series benchmark with the tuned recipe
+for thesis-comparable overall numbers; (c) discuss candidate gate designs beyond P1-P5.
+
+**Net so far**: a scoped positive result (P5+auto beats tuned RW-1 on GECCO) on top of a
+corrected-config negative-results arc (no general win across shapes/collections under the
+fixed config); the tuning stage decides whether the P5 win survives like-for-like.
