@@ -212,6 +212,7 @@ def fit_with_wandb(model, data, run_name, group, tags, config, enabled):
 def run_one(args, dataset_key):
     ds = series_label(dataset_key)          # short label (registry key or collection_idN)
     coll = collection_of(dataset_key)
+    grp = getattr(args, "wandb_group", None) or f"proposal{args.proposal}"
     print(f"\n{'='*70}\n[proposal {args.proposal} / {args.variant}] dataset={ds} (collection={coll})\n{'='*70}", flush=True)
     data, label = load_dataset(dataset_key)
     print(f"data {data.shape} | anomalies {int(label.sum())} ({label.mean()*100:.2f}%)", flush=True)
@@ -228,8 +229,8 @@ def run_one(args, dataset_key):
     if getattr(args, "baseline_only", False):
         base = CNN_RW(**common)
         brun, bscores = fit_with_wandb(
-            base, data, run_name=f"RW1m-{ds}-ep{args.epochs}",
-            group=f"proposal{args.proposal}",
+            base, data, run_name=f"RW1m-{ds}-l1{args.l1_weight}-ep{args.epochs}",
+            group=grp,
             tags=["rw1-matched", "RW-1", coll, f"ep{args.epochs}"] + list(args.tag),
             config={**shared_cfg, "model": "RW-1-matched"}, enabled=wb)
         pr, roc = evaluate(bscores, label)
@@ -241,7 +242,8 @@ def run_one(args, dataset_key):
             brun.summary.update({"auc_pr": pr, "auc_roc": roc, "corr/anom_over_norm": corr_ratio})
             brun.finish()
         os.makedirs(RESULTS_DIR, exist_ok=True)
-        path = os.path.join(RESULTS_DIR, "results_rw1matched.csv")
+        _sfx = f"_{args.wandb_group}" if getattr(args, "wandb_group", None) else ""
+        path = os.path.join(RESULTS_DIR, f"results_rw1matched{_sfx}.csv")
         row = {"dataset": ds, "collection": coll, "auc_pr": round(pr, 4), "auc_roc": round(roc, 4),
                "corr_anom_over_norm": round(corr_ratio, 4), "epochs": args.epochs}
         wh = not os.path.exists(path)
@@ -259,8 +261,8 @@ def run_one(args, dataset_key):
         print(f"\n-- baseline RW-1 (plain) on {ds} --", flush=True)
         base = CNN_RW(**common)
         brun, bscores = fit_with_wandb(
-            base, data, run_name=f"RW1-baseline-{ds}-ep{args.epochs}",
-            group=f"proposal{args.proposal}",
+            base, data, run_name=f"RW1-baseline-{ds}-l1{args.l1_weight}-ep{args.epochs}",
+            group=grp,
             tags=["baseline", "RW-1", coll, f"ep{args.epochs}"] + list(args.tag),
             config={**shared_cfg, "model": "RW-1", "score": "mean|correction|",
                     "tags": list(args.tag)}, enabled=wb)
@@ -292,7 +294,7 @@ def run_one(args, dataset_key):
     extra_suffix = ("-" + "_".join(f"{k}{v}" for k, v in extra.items())) if extra else ""
     prun, scores = fit_with_wandb(
         model, data,
-        run_name=f"P{args.proposal}-{args.variant}-{ds}-ep{args.epochs}-t{args.tau}-l{args.lam}{extra_suffix}",
+        run_name=f"P{args.proposal}-{args.variant}-{ds}-l1{args.l1_weight}-ep{args.epochs}-t{args.tau}-l{args.lam}{extra_suffix}",
         group=f"proposal{args.proposal}",
         tags=[f"P{args.proposal}", args.variant, coll,
               f"tau{args.tau}", f"lam{args.lam}", f"ep{args.epochs}"] + list(args.tag),
@@ -327,7 +329,8 @@ def run_one(args, dataset_key):
 
 def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=None, interp=None):
     os.makedirs(RESULTS_DIR, exist_ok=True)
-    path = os.path.join(RESULTS_DIR, f"results_p{args.proposal}.csv")
+    _sfx = f"_{args.wandb_group}" if getattr(args, "wandb_group", None) else ""
+    path = os.path.join(RESULTS_DIR, f"results_p{args.proposal}{_sfx}.csv")
     row = {
         "timestamp": datetime.now().isoformat(timespec="seconds"),
         "proposal": args.proposal,
@@ -388,6 +391,10 @@ def main():
                    help="disable wandb logging (default: on if WANDB_ENABLED!=0)")
     p.add_argument("--tag", action="append", default=[],
                    help="extra wandb tag (repeatable), e.g. --tag stage1")
+    p.add_argument("--wandb-group", dest="wandb_group", default=None,
+                   help="override the wandb group (default proposal{N}) AND route results "
+                        "to results_p{N}_<group>.csv, so a tuning sweep stays separate from "
+                        "the main corrected runs in both wandb and the aggregation CSVs")
     p.add_argument("--extra", action="append", default=[],
                    help="proposal-specific kwarg key=val (repeatable), e.g. --extra tau_u=1.0")
     args = p.parse_args()

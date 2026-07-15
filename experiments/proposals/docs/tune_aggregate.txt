@@ -1,0 +1,20 @@
+=== P5 best-HP (per-series best over l1xlam, then collection mean) vs RW-1 best-HP ===
+collection    DeepAnT  RW1-best  P5-best    delta  RW1@l1.001-200  RW1@l1.001-100
+GECCO           0.454     0.639    0.608   -0.030           0.616           0.667
+OPPORTUNITY     0.272     0.138    0.142   +0.003           0.089           0.099
+CreditCard      0.147     0.111    0.014   -0.098           0.114           0.119
+TAO             0.996     0.995    0.996   +0.000           0.995           0.995
+PSM             0.407     0.137    0.133   -0.004           0.137           0.134
+MSL             0.116     0.131    0.226   +0.095           0.101           0.120
+SWaT            0.516     0.444    0.451   +0.006           0.142           0.158
+
+P5 best-HP beats RW-1 best-HP on 4/7 collections (like-for-like).
+
+=== best config picked per series (l1_weight, lam) — does SWaT prefer heavy l1? ===
+  GECCO        n= 1  best-configs: ['l1=0.001,lam=1.0/auto']
+  OPPORTUNITY  n= 8  best-configs: ['l1=1.0,lam=1.5', 'l1=1.0,lam=1.5', 'l1=0.01,lam=1.5', 'l1=1.0,lam=1.0/auto', 'l1=0.1,lam=1.0', 'l1=0.01,lam=1.5', 'l1=0.01,lam=1.0/auto', 'l1=0.01,lam=1.0/auto']
+  CreditCard   n= 1  best-configs: ['l1=0.1,lam=1.5']
+  TAO          n=13  best-configs: ['l1=0.001,lam=1.0', 'l1=0.001,lam=1.5', 'l1=0.001,lam=1.0', 'l1=0.001,lam=1.5', 'l1=0.001,lam=1.0/auto', 'l1=0.001,lam=1.0/auto', 'l1=0.001,lam=1.0/auto', 'l1=0.001,lam=1.5']
+  PSM          n= 1  best-configs: ['l1=0.001,lam=1.5']
+  MSL          n=16  best-configs: ['l1=0.001,lam=1.5', 'l1=0.001,lam=1.5', 'l1=0.01,lam=1.5', 'l1=0.001,lam=1.0/auto', 'l1=0.01,lam=1.0/auto', 'l1=0.001,lam=1.0/auto', 'l1=0.001,lam=1.0/auto', 'l1=0.1,lam=1.0/auto']
+  SWaT         n= 2  best-configs: ['l1=0.1,lam=1.0/auto', 'l1=1.0,lam=1.0']
