@@ -218,7 +218,8 @@ def run_one(args, dataset_key):
     print(f"data {data.shape} | anomalies {int(label.sum())} ({label.mean()*100:.2f}%)", flush=True)
 
     common = dict(window_size=args.window, feats=data.shape[1], epochs=args.epochs,
-                  batch_size=args.batch, l1_weight=args.l1_weight)
+                  batch_size=args.batch, l1_weight=args.l1_weight,
+                  correction_rate=args.correction_rate)
     wb = wandb_enabled(args)
     shared_cfg = dict(dataset=ds, collection=coll,
                       dataset_file=DATASETS.get(dataset_key, dataset_key),
@@ -245,7 +246,8 @@ def run_one(args, dataset_key):
         _sfx = f"_{args.wandb_group}" if getattr(args, "wandb_group", None) else ""
         path = os.path.join(RESULTS_DIR, f"results_rw1matched{_sfx}.csv")
         row = {"dataset": ds, "collection": coll, "auc_pr": round(pr, 4), "auc_roc": round(roc, 4),
-               "corr_anom_over_norm": round(corr_ratio, 4), "epochs": args.epochs}
+               "corr_anom_over_norm": round(corr_ratio, 4), "epochs": args.epochs,
+               "l1_weight": args.l1_weight, "correction_rate": args.correction_rate}
         wh = not os.path.exists(path)
         with open(path, "a", newline="") as f:
             w = csv.DictWriter(f, fieldnames=list(row))
@@ -356,6 +358,7 @@ def log_result(args, dataset_key, pr, roc, base_pr, base_roc, model=None, extra=
         "corr_anomaly_coverage": round((interp or {}).get("corr/anomaly_coverage", float("nan")), 4),
         "gate_auc_vs_label": round((interp or {}).get("gate/auc_roc_vs_label", float("nan")), 4),
         "window": args.window, "batch": args.batch, "l1_weight": args.l1_weight,
+        "correction_rate": args.correction_rate,
     }
     write_header = not os.path.exists(path)
     with open(path, "a", newline="") as f:
@@ -383,6 +386,9 @@ def main():
     p.add_argument("--window", type=int, default=50)
     p.add_argument("--batch", type=int, default=256)
     p.add_argument("--l1_weight", type=float, default=0.001)
+    p.add_argument("--correction_rate", type=float, default=0.1,
+                   help="RMSprop step size for the correction tensor (thesis §6.3.2 axis; "
+                        "separate knob from l1_weight). Threads into RW-1 and every proposal.")
     p.add_argument("--baseline", action="store_true", help="also run plain RW-1 for the delta")
     p.add_argument("--baseline-only", dest="baseline_only", action="store_true",
                    help="run ONLY a matched RW-1 (same epochs/HP) on the series, log AUC + "
