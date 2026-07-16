@@ -151,3 +151,43 @@ for thesis-comparable overall numbers; (c) discuss candidate gate designs beyond
 **Net so far**: a scoped positive result (P5+auto beats tuned RW-1 on GECCO) on top of a
 corrected-config negative-results arc (no general win across shapes/collections under the
 fixed config); the tuning stage decides whether the P5 win survives like-for-like.
+
+## Like-for-like HP tuning — results (step (a), completed)
+
+P5 tuned per series over `l1_weight ∈ {1, 0.1, 0.01, 0.001} × λ ∈ {1, 1.5, auto}` at
+**200 epochs**, on the SAME series as the RW-1 best-HP baseline. **P5 best-HP** = per-series
+max over the grid, then collection mean (mirrors how RW-1 `best_pr` is a per-file best).
+`matched RW-1` = plain gate-off RW-1 at our fixed `l1_weight=0.001` (100/200ep), the
+config-confound control. Source: `results_p5_proposal5_tune.csv` (504 runs),
+`results_rw1matched_...csv` (84), aggregated by `agg_tune.py` → `docs/tune_aggregate.txt`.
+
+| collection | DeepAnT | RW-1 best | **P5 best** | Δ (P5−RW1) | matched RW-1 (l1=.001, 200/100) |
+|---|:--:|:--:|:--:|:--:|:--:|
+| GECCO | 0.454 | 0.639 | 0.608 | −0.030 | 0.616 / 0.667 |
+| OPPORTUNITY | 0.272 | 0.138 | 0.142 | +0.003 | 0.089 / 0.099 |
+| CreditCard | 0.147 | 0.111 | 0.014 | −0.098 | 0.114 / 0.119 |
+| TAO | 0.996 | 0.995 | 0.996 | +0.000 | 0.995 |
+| PSM | 0.407 | 0.137 | 0.133 | −0.004 | 0.137 / 0.134 |
+| **MSL** | 0.116 | 0.131 | **0.226** | **+0.095** | 0.101 / 0.120 |
+| SWaT | 0.516 | 0.444 | 0.451 | +0.006 | 0.142 / 0.158 |
+
+**P5 best-HP beats RW-1 best-HP on 4/7** collections — but OPPORTUNITY/TAO/SWaT are ties
+within no-seed noise, so **the one real win is MSL (+0.095)**. Findings:
+
+- **SWaT was the config axis, not gating (confirmed).** The matched RW-1 (l1=0.001) also
+  collapses to ~0.14; with `l1_weight` tuned (id_1→0.1, id_2→1.0, exactly RW-1's best l1)
+  P5 recovers to **0.451 ≈ RW-1's 0.444**. The "block collapse" was the fixed l1_weight.
+- **MSL is a genuine gate win** — P5-best 0.226 vs RW-1-best 0.131, and above even the
+  matched RW-1 (0.10), so l1 alone doesn't explain it.
+- **GECCO win does not survive matched epochs.** At 200ep P5-best 0.608 < RW-1 0.639
+  (−0.030); the earlier 100ep win (0.677) shrinks because RW-1 too is better at 100ep
+  (0.667) than 200ep (0.616) on GECCO — an epoch-config effect, not pure method gain.
+- **CreditCard: the gate genuinely hurts** (P5-best 0.014 vs matched RW-1 0.114) — point
+  anomalies + correction-magnitude scoring.
+
+**Caveats**: single run per (series, config), no fixed seed; P5's per-series max is over 12
+cells vs RW-1's 4 (l1-only), so P5-best is slightly noise-favored. **`correction_rate` was
+fixed at 0.1 throughout** — it is a *separate* knob from `l1_weight` (the RMSprop step size
+for the correction vs the L1 penalty weight; see `rw/cnn_rw.py`), and it is the axis Baldo's
+thesis actually tuned (§6.3.2). So the thesis-faithful next sweep is **`correction_rate`**,
+not more `l1_weight`.
