@@ -67,22 +67,39 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
             out, target, reduction="none").mean(dim=1) + _EPS)      # [B]
 
     def _compute_signals(self, window_resid, res_stats, model_input=None, target=None):
-        # residual gate (robust-z of the per-window residual magnitude)
+        # Both docx factors are computed IN-BATCH (no epoch lag, unlike P3/P5).
+        #
+        # -- factor 1, residual gate (identical in spirit to P1):
+        #      g_res = sigma(k_r * (robust_z(resid) - tau_r)),  robust_z = (r - med)/MAD
+        #    "is this window's forecast error unusually large vs the running residual
+        #    distribution?" median/MAD make tau_r portable across datasets.
         g_res = torch.sigmoid(self.k_r * (_robust_z(window_resid.detach()) - self.tau_r))
 
-        # input-gradient correctability: extra fwd+bwd w.r.t. the model INPUT
-        inp = model_input.detach().clone().requires_grad_(True)
-        tgt = target.detach()
-        per_win = self._per_window_rmse(inp, tgt)                    # [B]
-        gnorm = torch.autograd.grad(per_win.sum(), inp)[0]           # [B, feats, W]
-        h = gnorm.reshape(gnorm.shape[0], -1).norm(dim=1)            # [B] ||d loss/d input||
+        # -- factor 2, gradient-correctability (docx h_t = ||d loss / d input||):
+        #    reuse the RW trick as a MEASUREMENT: clone the (corrected) input,
+        #    switch gradients on, and ask "if this input could move, how strongly
+        #    would the loss push it?". A large input-gradient norm means a small
+        #    input edit would cut the loss a lot = the error is CORRECTABLE.
+        #    Costs one extra forward+backward per batch.
+        inp = model_input.detach().clone().requires_grad_(True)     # detached copy: no
+        tgt = target.detach()                                       #   effect on training
+        per_win = self._per_window_rmse(inp, tgt)                    # [B] l(W_t) per window
+        gnorm = torch.autograd.grad(per_win.sum(), inp)[0]           # [B, feats, W] d l/d input
+        h = gnorm.reshape(gnorm.shape[0], -1).norm(dim=1)            # [B] h_t = ||grad|| per window
         if self.use_benefit:
+            # `benefit` variant (docx b_t): instead of the raw gradient norm, take one
+            # actual gradient step on the input and measure the realized loss drop
+            #   b_t = l(W) - l(W - eta_x * grad)
             with torch.no_grad():
                 stepped = inp - self.eta_x * gnorm
                 benefit = (per_win.detach() - self._per_window_rmse(stepped, tgt))  # [B]
             signal = benefit
         else:
             signal = h
+        #    g_grad = sigma(k_h * (robust_z(h_t) - tau_h)); robust-z again so the raw
+        #    gradient scale (which varies wildly across datasets) drops out.
         g_grad = torch.sigmoid(self.k_h * (_robust_z(signal.detach()) - self.tau_h))
 
+        # dual gate: base multiplies these as E * C ->  g = g_res * g_grad
+        # ("high residual AND gradient-correctable"), then scale = 1 + lam*g.
         return g_res.clamp(0.0, 1.0), g_grad.clamp(0.0, 1.0)

@@ -87,47 +87,52 @@ class CNN_RW_CEGAR_P3(CNN_RW_CEGAR_HookBase):
     #    per-window wrongness, so scale = 1 + lam*g_win up-weights stable-correction
     #    windows. confidence = 1 (the consistency IS the signal). ──
     def _compute_signals(self, window_resid, res_stats, model_input=None, target=None):
+        # Amplification path: look up the epoch-(e-1) gate map built in
+        # _writeback_scale (the correction is only final at epoch end).
         B = window_resid.shape[0]
-        confidence = torch.ones_like(window_resid)
+        confidence = torch.ones_like(window_resid)            # C = 1 (consistency IS the signal)
         if not self.amplify or self._g_prev_t is None:
+            # preserve-only ablation / first main epoch: gate 0 = plain RW-1
             return torch.zeros_like(window_resid), confidence
-        yb = np.asarray(self._cur_yb_idx).reshape(B, -1)      # [B, pred_len] target steps
-        gwin = self._g_prev_t[yb].mean(axis=1)                # [B] mean gate over the window
+        yb = np.asarray(self._cur_yb_idx).reshape(B, -1)      # [B, pred_len] target timesteps
+        gwin = self._g_prev_t[yb].mean(axis=1)                # [B] g_win = mean_t g_prev[t]
         E_t = torch.as_tensor(gwin, dtype=window_resid.dtype, device=window_resid.device)
-        return E_t.clamp(0.0, 1.0), confidence
+        return E_t.clamp(0.0, 1.0), confidence                # base: scale = 1 + lam*E*C
 
     def _writeback_scale(self, correction, grad, epoch):
+        # Epoch end: (A) build next epoch's gate map g_t, (B) preserve write-back.
         C = correction.detach()[0]                            # [feats, T]
-        d = C.abs().mean(dim=0)                               # [T] magnitude
-        tau_d = torch.quantile(d, self.corr_q)
-        g_corr = torch.sigmoid(self.k_d * (d - tau_d) / (d.std() + _EPS))   # [T]
+        d = C.abs().mean(dim=0)                               # d_t = ||C_t|| (mean|.| = same summary as the score)
+        tau_d = torch.quantile(d, self.corr_q)                # tau_d = Q_{corr_q}(d), auto threshold
+        g_corr = torch.sigmoid(self.k_d * (d - tau_d) / (d.std() + _EPS))   # magnitude gate: sigma of k_d*(d - tau_d)/sd  [T]
 
-        # direction stability v_t = cos(dC^e, dC^{e-1}); needs 3 epochs of history
+        # v_t = cos(C^e - C^{e-1}, C^{e-1} - C^{e-2}); needs 2 deltas -> first 2 epochs v=0
         if self._C_prev is not None:
-            dC = C - self._C_prev                             # [feats, T]
+            dC = C - self._C_prev                             # [feats, T] this epoch's delta
         else:
             dC = torch.zeros_like(C)
         if self._dC_prev is not None:
-            num = (dC * self._dC_prev).sum(dim=0)             # [T]
+            num = (dC * self._dC_prev).sum(dim=0)             # [T] dot over features
             den = dC.norm(dim=0) * self._dC_prev.norm(dim=0) + _EPS
-            v = num / den                                     # [T] cosine in [-1, 1]
+            v = num / den                                     # [T] cos in [-1, 1]
         else:
             v = torch.zeros_like(d)
-        g_stab = torch.sigmoid(self.k_v * (v - self.tau_v))   # [T]
+        g_stab = torch.sigmoid(self.k_v * (v - self.tau_v))   # stability gate: sigma of k_v*(v - tau_v)  [T]
 
-        g = (g_corr * g_stab).clamp(0.0, 1.0)                 # [T] docx gate
-        # persistence: EMA-smooth the gate across epochs (consistently confident)
+        g = (g_corr * g_stab).clamp(0.0, 1.0)                 # docx gate: g_corr times g_stab
+        # docx pi (persistence) folded in as an EMA of the gate across epochs
         if self._persist is None or self._persist.shape != g.shape:
             self._persist = torch.zeros_like(g)
         self._persist = self.persist_alpha * self._persist + (1.0 - self.persist_alpha) * g
         g_use = self._persist.clamp(0.0, 1.0)
-        self._g_prev_t = g_use.detach().cpu().numpy()         # next-epoch amp + interp
+        self._g_prev_t = g_use.detach().cpu().numpy()         # next-epoch amp gate + interp
 
-        # update epoch history AFTER using the previous deltas
+        # roll history AFTER v used the previous deltas
         self._dC_prev = dC.clone()
         self._C_prev = C.clone()
 
-        # preserve write-back: suppress writes on confident, consistent corrections
+        # preserve (docx eta_C(1-gamma*g)): grad = accumulated RMSE + L1, so this is
+        # the one place the L1 shrink can be damped on confident timesteps
         scale = (1.0 - self.gamma * g_use).clamp(0.0, 1.0)    # [T]
         return grad * scale.view(1, 1, -1)
 
