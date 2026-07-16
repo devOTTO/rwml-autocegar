@@ -15,10 +15,15 @@ b_t = l(W) - l(W - eta_x*grad) instead of the raw gradient norm. Intervention is
 inherited gradient amplification (ScaleGrad, scale = 1 + lam*g); per-timestep gate_per_t
 is recorded by the base for interpretability. Only `_compute_signals` is overridden.
 
-**Stage-1: amplification only.** The docx's normalized, correctable-point write-back
-(`C <- C - eta_C * g * grad/||grad||`) is NOT implemented; the amplified correction
-gradient already concentrates on high-(residual*correctability) windows. `correction_init`
-is 'neg_x' (RW-1-faithful) like P1/P2/P3/P5; warm-up runs plain RW-1 so no input jump.
+**Full docx spec: amplification + write-back.** Both docx mechanisms are on:
+  1. Gradient amplification — the dual gate g = g_res*g_grad drives the per-window model
+     gradient via the inherited ScaleGrad path (scale = 1 + lam*g).
+  2. Correctable-point write-back — at epoch end the correction is additionally stepped in
+     the (normalized) loss-reducing direction on gated points: `C <- C - eta_C * g_t *
+     grad/||grad||` (docx). Implemented in `_writeback_scale` as a direct additive step on
+     the correction (the per-timestep gate g_t is accumulated over the epoch from the same
+     dual gate used for amplification), leaving the normal RW-1 gradient step intact.
+`correction_init` is 'neg_x' (RW-1-faithful); warm-up runs plain RW-1 so no input jump.
 Known minor: the input-gradient forward runs with the model in train mode, so dropout
 (if any) adds a little noise to h_t.
 """
@@ -50,7 +55,7 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
     NAME = "P4-DualResidualGradient"
 
     def __init__(self, *args, k_r=1.0, tau_r=2.0, k_h=1.0, tau_h=0.0,
-                 use_benefit=False, eta_x=0.1, **kwargs):
+                 use_benefit=False, eta_x=0.1, eta_C=0.1, **kwargs):
         kwargs.setdefault("warmup_epochs", 10)
         kwargs.setdefault("correction_init", "neg_x")    # RW-1-faithful (warm-up runs plain RW-1)
         super().__init__(*args, **kwargs)
@@ -60,6 +65,9 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
         self.tau_h = float(tau_h)
         self.use_benefit = bool(use_benefit)
         self.eta_x = float(eta_x)
+        self.eta_C = float(eta_C)          # write-back step size (docx eta_C)
+        self._wb_pairs = []                # per-epoch (target-idx, gate) for write-back
+        self._g_prev_t = None              # last per-timestep gate (write-back + interp)
 
     def _per_window_rmse(self, inp, target):
         out = self.model(inp).view(-1, self.feats * self.pred_len)
@@ -102,4 +110,30 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
 
         # dual gate: base multiplies these as E * C ->  g = g_res * g_grad
         # ("high residual AND gradient-correctable"), then scale = 1 + lam*g.
-        return g_res.clamp(0.0, 1.0), g_grad.clamp(0.0, 1.0)
+        g_res = g_res.clamp(0.0, 1.0)
+        g_grad = g_grad.clamp(0.0, 1.0)
+        # stash the per-timestep dual gate for the epoch-end write-back (map each
+        # window's g onto its prediction-target timesteps, like the base's interp gate)
+        gwin = (g_res * g_grad).detach().cpu().numpy()               # [B]
+        yb = np.asarray(self._cur_yb_idx).reshape(gwin.shape[0], -1)  # [B, pred_len]
+        self._wb_pairs.append((yb.reshape(-1), np.repeat(gwin, yb.shape[1])))
+        return g_res, g_grad
+
+    def _writeback_scale(self, correction, grad, epoch):
+        """Docx write-back: step the correction in the loss-reducing direction on gated
+        points, `C <- C - eta_C * g_t * grad/||grad||`, then leave the normal RW-1 grad
+        step (returned unchanged) to run. g_t = mean dual gate per timestep this epoch."""
+        T = correction.shape[2]
+        acc = np.zeros(T); cnt = np.zeros(T)
+        for tgt, grep in self._wb_pairs:
+            np.add.at(acc, tgt, grep)
+            np.add.at(cnt, tgt, 1.0)
+        self._wb_pairs = []                                          # reset for next epoch
+        g_t = np.divide(acc, cnt, out=np.zeros_like(acc), where=cnt > 0)   # [T]
+        self._g_prev_t = g_t                                        # interpretability
+        if grad is not None and self.eta_C > 0.0:
+            gd = grad.detach()[0]                                    # [feats, T]
+            gdir = gd / (gd.norm(dim=0, keepdim=True) + _EPS)        # unit per timestep
+            gt = torch.as_tensor(g_t, dtype=correction.dtype, device=correction.device)
+            correction.data[0] -= self.eta_C * gt.view(1, -1) * gdir  # C <- C - eta_C*g*grad/||grad||
+        return grad
