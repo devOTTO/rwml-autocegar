@@ -65,7 +65,48 @@ anomalies).
   RW-1's 4 (l1-only) → P5-best is mildly noise-favored.
 - `correction_rate` (thesis §6.3.2 axis) not yet swept — the follow-up is running.
 
+## correction_rate sweep — results (`proposal5_crtune`, 504 runs)
+P5 (h5, auto-λ) swept `correction_rate ∈ {0.001, 0.01, 0.1} × l1_weight ∈ {1, 0.1, 0.01, 0.001}`,
+200ep. **`correction_rate` turns out to be a large, collection-dependent lever — bigger than
+l1 for several collections.** Mean AUC-PR at `l1=0.001`:
+
+| collection | cr=0.001 | cr=0.01 | cr=0.1 (our old fixed) |
+|---|:--:|:--:|:--:|
+| GECCO | 0.422 | 0.575 | **0.595** |
+| OPPORTUNITY | **0.607** | 0.124 | 0.078 |
+| CreditCard | **0.173** | 0.165 | 0.008 |
+| TAO | **1.000** | 0.998 | 0.995 |
+| PSM | 0.152 | **0.166** | 0.130 |
+| MSL | 0.119 | 0.109 | 0.119 |
+| SWaT | **0.500** | 0.366 | 0.153 |
+
+- **Most collections want LOW cr (0.001)**: OPPORTUNITY 0.078→0.607, SWaT 0.153→0.500,
+  CreditCard 0.008→0.173. **GECCO is the exception — it wants HIGH cr (0.1).**
+- **Our fixed `correction_rate=0.1` (every earlier run) was near-optimal for GECCO but poor
+  for the rest** — it silently shaped the whole earlier "P5 only wins GECCO" picture.
+
+P5 crtune-best (per-series best over cr × l1) vs RW-1 best-HP:
+
+| collection | RW-1 best | P5 crtune-best | Δ | best (cr, l1) |
+|---|:--:|:--:|:--:|:--:|
+| GECCO | 0.639 | 0.595 | −0.044 | cr0.1 / l10.001 |
+| OPPORTUNITY | 0.138 | 0.608 | **+0.470** | cr0.001 / l1≥0.1 |
+| CreditCard | 0.111 | 0.173 | +0.062 | cr0.001 / l11.0 |
+| TAO | 0.995 | 1.000 | +0.005 | cr0.001 |
+| PSM | 0.137 | 0.166 | +0.029 | cr0.01 / l10.001 |
+| MSL | 0.131 | 0.210 | +0.080 | cr0.1 / l10.001 |
+| SWaT | 0.444 | 0.535 | +0.091 | cr0.1 / l11.0 |
+
+P5 crtune-best > RW-1 best-HP on **6/7** (all but GECCO).
+
+**Critical caveat (do not over-claim):** RW-1's best-HP was tuned over `l1_weight` ONLY
+(cr fixed at 0.1); P5 here got the extra `correction_rate` axis. So the 6/7 is **not**
+like-for-like — P5 simply has one more tuning knob. The fair comparison is to give RW-1
+the same `cr × l1` sweep (next step). The solid, defensible finding is: **`correction_rate`
+is a dominant, collection-dependent HP, and our earlier fixed 0.1 was mis-set for most
+collections — which retro-explains much of the earlier per-collection win/loss pattern.**
+
 ## Next steps
-- **`correction_rate {0.001,0.01,0.1} × l1_weight` sweep** (thesis-faithful; submitted as
-  `proposal5_crtune`, job 42253497). Results appended here when done.
+- **RW-1 `cr × l1` sweep** (baseline-only) so the 6/7 becomes a fair like-for-like — this is
+  now the priority (P5 has an unfair extra axis until RW-1 gets it too).
 - For a headline claim, report the single fixed config that maximizes mean Δ (not oracle).
