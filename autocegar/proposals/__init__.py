@@ -65,8 +65,9 @@ PROPOSALS = {
         "summary": "Gate = high residual AND high input-gradient reducibility "
                    "(correctability). Extra fwd+bwd w.r.t. the input per batch.",
         "variants": {
-            "gradnorm": {"use_benefit": False},   # g_grad from ||d loss/d input||
-            "benefit":  {"use_benefit": True},    # g_grad from estimated loss reduction
+            "gradnorm":    {"use_benefit": False},              # amplification only (eta_C=0, default)
+            "benefit":     {"use_benefit": True},               # g_grad from estimated loss reduction
+            "gradnorm_wb": {"use_benefit": False, "eta_C": 0.1},  # + docx correctable-point write-back
         },
         "default_variant": "gradnorm",
     },

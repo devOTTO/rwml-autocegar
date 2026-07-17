@@ -2,7 +2,7 @@
 
 A point is a confident error if it has HIGH residual AND is gradient-correctable
 (small input changes strongly reduce the forecasting loss). Built on the shared hooks
-base (rw_cegar_hooks.py), though it only needs the standard per-window gate path.
+base (rw_cegar_hooks.py), using both its per-window gate path and its write-back hook.
 
     g_res  = sigma(k_r*(robust_z(resid) - tau_r))               # residual (as in P1)
     h_t    = ||d loss / d input||   (per window)                # input-gradient norm
@@ -12,8 +12,9 @@ base (rw_cegar_hooks.py), though it only needs the standard per-window gate path
 The gate is computed in-batch (no epoch lag): an extra forward+backward w.r.t. the model
 INPUT gives h_t. `benefit` variant uses the actual loss reduction
 b_t = l(W) - l(W - eta_x*grad) instead of the raw gradient norm. Intervention is the
-inherited gradient amplification (ScaleGrad, scale = 1 + lam*g); per-timestep gate_per_t
-is recorded by the base for interpretability. Only `_compute_signals` is overridden.
+inherited gradient amplification (ScaleGrad, scale = 1 + lam*g) plus the optional
+write-back (eta_C>0); per-timestep gate_per_t is recorded by the base for interpretability.
+Overrides `_compute_signals` (dual gate) and `_writeback_scale` (write-back step).
 
 **Full docx spec: amplification + write-back.** Both docx mechanisms are on:
   1. Gradient amplification — the dual gate g = g_res*g_grad drives the per-window model
@@ -55,7 +56,7 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
     NAME = "P4-DualResidualGradient"
 
     def __init__(self, *args, k_r=1.0, tau_r=2.0, k_h=1.0, tau_h=0.0,
-                 use_benefit=False, eta_x=0.1, eta_C=0.1, **kwargs):
+                 use_benefit=False, eta_x=0.1, eta_C=0.0, **kwargs):
         kwargs.setdefault("warmup_epochs", 10)
         kwargs.setdefault("correction_init", "neg_x")    # RW-1-faithful (warm-up runs plain RW-1)
         super().__init__(*args, **kwargs)
@@ -120,9 +121,11 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
         return g_res, g_grad
 
     def _writeback_scale(self, correction, grad, epoch):
-        """Docx write-back: step the correction in the loss-reducing direction on gated
-        points, `C <- C - eta_C * g_t * grad/||grad||`, then leave the normal RW-1 grad
-        step (returned unchanged) to run. g_t = mean dual gate per timestep this epoch."""
+        """Docx write-back: step the correction in the FORECAST-loss-reducing direction on
+        gated points, `C <- C - eta_C * g_t * grad_rmse/||grad_rmse||`, using the RMSE-only
+        gradient (base snapshot taken before the L1 term). Using the post-L1 grad would let
+        the L1 shrink-to-zero component dominate at converged anomalies and erase evidence.
+        The normal RW-1 grad step (returned unchanged) still runs. eta_C=0 => off (default)."""
         T = correction.shape[2]
         acc = np.zeros(T); cnt = np.zeros(T)
         for tgt, grep in self._wb_pairs:
@@ -131,9 +134,10 @@ class CNN_RW_CEGAR_P4(CNN_RW_CEGAR_HookBase):
         self._wb_pairs = []                                          # reset for next epoch
         g_t = np.divide(acc, cnt, out=np.zeros_like(acc), where=cnt > 0)   # [T]
         self._g_prev_t = g_t                                        # interpretability
-        if grad is not None and self.eta_C > 0.0:
-            gd = grad.detach()[0]                                    # [feats, T]
+        rmse_grad = getattr(self, "_rmse_grad", None)               # RMSE-only (pre-L1)
+        if rmse_grad is not None and self.eta_C > 0.0:
+            gd = rmse_grad[0]                                        # [feats, T]
             gdir = gd / (gd.norm(dim=0, keepdim=True) + _EPS)        # unit per timestep
             gt = torch.as_tensor(g_t, dtype=correction.dtype, device=correction.device)
-            correction.data[0] -= self.eta_C * gt.view(1, -1) * gdir  # C <- C - eta_C*g*grad/||grad||
+            correction.data[0] -= self.eta_C * gt.view(1, -1) * gdir  # C <- C - eta_C*g*grad_rmse/||grad_rmse||
         return grad

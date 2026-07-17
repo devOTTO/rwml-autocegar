@@ -275,6 +275,10 @@ class CNN_RW_CEGAR_HookBase(CNN_RW):
                             conf_hist_accum = [a + b for a, b in zip(conf_hist_accum, ch)]
 
             # ── L1 outlier penalty + epoch-wise correction step (RW-1, every epoch) ──
+            # snapshot the RMSE-only accumulated correction gradient BEFORE adding the L1
+            # term, so a proposal's write-back can step in the forecast-loss direction
+            # without the L1 shrink-to-zero component (used by P4; passive for others).
+            self._rmse_grad = correction.grad.detach().clone() if correction.grad is not None else None
             l1_loss = self.l1_weight * torch.norm(correction, p=1)
             l1_loss.backward()
             if correction.grad is not None:

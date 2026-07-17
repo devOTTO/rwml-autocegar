@@ -13,7 +13,7 @@ ROOT = os.path.dirname(os.path.dirname(os.path.dirname(HERE)))
 FAMS = ["GECCO", "OPPORTUNITY", "CreditCard", "TAO", "PSM", "MSL", "SWaT"]
 CR = [0.001, 0.01, 0.1]
 L1 = [0.001, 0.01, 0.1, 1.0]
-VARIANT = {1: "basic", 2: "mc5", 3: "full", 4: "gradnorm"}
+VARIANT = {1: "basic", 2: "mc5", 3: "full", 4: "gradnorm_wb"}  # P4 with docx write-back
 
 files = pd.read_csv(os.path.join(ROOT, "rw/reproduction/summary_rw1_besthp.csv"))
 files = files[files["family"].isin(FAMS)]["file"].tolist()
