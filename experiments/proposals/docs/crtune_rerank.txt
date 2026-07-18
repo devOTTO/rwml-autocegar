@@ -1,0 +1,16 @@
+cr x l1 RE-RANK (per-series best-HP, collection mean)
+ collection  RW1_best  P1-residual  P2-uncertainty  P3-consistency  P4-dualgrad(wb)  P5-persistence
+      GECCO    0.6386       0.5593          0.5322          0.5241           0.5735          0.5947
+OPPORTUNITY    0.1383       0.6080          0.6080          0.6024           0.5305          0.6080
+ CreditCard    0.1111       0.1728          0.1729          0.1728           0.1726          0.1728
+        TAO    0.9953       1.0000          1.0000          1.0000           1.0000          1.0000
+        PSM    0.1369       0.1681          0.1550          0.1573           0.1719          0.1655
+        MSL    0.1310       0.1782          0.1755          0.1617           0.1865          0.2105
+       SWaT    0.4441       0.5361          0.5374          0.5128           0.4979          0.5352
+    MEAN(7)    0.3708       0.4604          0.4544          0.4473           0.4476          0.4695
+
+wins vs RW-1 (of 7): {'P1-residual': 6, 'P2-uncertainty': 6, 'P3-consistency': 6, 'P4-dualgrad(wb)': 6, 'P5-persistence': 6}
+CAVEAT: RW-1 best-HP swept l1 only (cr fixed); P1-P5 got the extra cr axis -> wins are NOT like-for-like.
+
+P5 full-200 (per-file best over cr x l1) = 0.3643 over 199 series
+  vs thesis RW-1 0.28 / reproduction RW-1 best-HP 0.289

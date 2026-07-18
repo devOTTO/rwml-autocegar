@@ -106,7 +106,45 @@ the same `cr × l1` sweep (next step). The solid, defensible finding is: **`corr
 is a dominant, collection-dependent HP, and our earlier fixed 0.1 was mis-set for most
 collections — which retro-explains much of the earlier per-collection win/loss pattern.**
 
+## Full P1–P5 cr × l1 re-ranking (all gates, 504 runs each)
+The same `cr{0.001,0.01,0.1} × l1{0.001,0.01,0.1,1.0}` sweep at 200ep was run for **every**
+proposal (P4 in the `gradnorm_wb` variant, i.e. with the docx write-back on). Per-series best
+over the grid, collection mean:
+
+| collection | RW-1 best | P1 | P2 | P3 | P4 (wb) | **P5** |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | 0.639 | 0.559 | 0.532 | 0.524 | 0.574 | 0.595 |
+| OPPORTUNITY | 0.138 | 0.608 | 0.608 | 0.602 | 0.530 | 0.608 |
+| CreditCard | 0.111 | 0.173 | 0.173 | 0.173 | 0.173 | 0.173 |
+| TAO | 0.995 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| PSM | 0.137 | 0.168 | 0.155 | 0.157 | 0.172 | 0.166 |
+| MSL | 0.131 | 0.178 | 0.176 | 0.162 | 0.187 | **0.210** |
+| SWaT | 0.444 | 0.536 | 0.537 | 0.513 | 0.498 | 0.535 |
+| **MEAN(7)** | **0.371** | **0.460** | 0.454 | 0.447 | 0.448 | **0.470** |
+| wins vs RW-1 | — | 6/7 | 6/7 | 6/7 | 6/7 | 6/7 |
+
+Figure: `figures/crtune_rerank.png`. wandb: run `crtune-rerank-P1toP5` (group `crtune_rerank`).
+
+**What this shows:**
+1. **The five gates cluster tightly (0.447–0.470).** Ordering P5 > P1 > P2 ≈ P4 > P3, but the
+   spread is ~0.02 — **the choice of gate is essentially second-order**; consistent with the
+   earlier finding that λ (incl. auto) has ~no effect. **cr and l1 are what move the number.**
+2. **P4's write-back does not lift P4** — `gradnorm_wb` lands mid-pack (0.448), below P1/P5.
+   The docx correctable-point write-back is implemented and runs cleanly, but adds no aggregate
+   AUC-PR over plain amplification here.
+3. **P5 stays the best single gate** (0.470), edging P1 (0.460), mainly on MSL (its one real
+   gate win, +0.079 vs RW-1) and a small OPPORTUNITY/SWaT margin.
+4. **Same like-for-like caveat as above:** RW-1's best-HP swept l1 only, so the uniform "6/7"
+   is inflated by the extra cr axis given to P1–P5, **not** by the gates.
+
+## P5 full-200 benchmark (per-file best over cr × l1)
+P5 (`h5`, auto-λ) over the full 200-series RW benchmark, per-file best over `cr × l1`:
+**mean AUC-PR = 0.364** (199 series) vs **thesis RW-1 0.28** / reproduction RW-1 best-HP 0.289.
+This is an oracle per-file best (upper bound), and RW-1 was **not** re-run on full-200 under the
+same cr×l1 grid, so it is P5-vs-thesis, not a matched head-to-head. Source
+`results_p5_p5_full200_besthp.csv`; aggregated by `log_crtune_rerank.py`.
+
 ## Next steps
 - **RW-1 `cr × l1` sweep** (baseline-only) so the 6/7 becomes a fair like-for-like — this is
-  now the priority (P5 has an unfair extra axis until RW-1 gets it too).
+  now the priority (P1–P5 have an unfair extra axis until RW-1 gets it too).
 - For a headline claim, report the single fixed config that maximizes mean Δ (not oracle).

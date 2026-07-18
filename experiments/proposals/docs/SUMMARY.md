@@ -191,3 +191,34 @@ fixed at 0.1 throughout** — it is a *separate* knob from `l1_weight` (the RMSp
 for the correction vs the L1 penalty weight; see `rw/cnn_rw.py`), and it is the axis Baldo's
 thesis actually tuned (§6.3.2). So the thesis-faithful next sweep is **`correction_rate`**,
 not more `l1_weight`.
+
+## Full P1–P5 cr × l1 re-ranking (correction_rate follow-up)
+
+Every proposal (P4 in the docx-write-back `gradnorm_wb` variant) was swept over
+`cr{0.001,0.01,0.1} × l1{0.001,0.01,0.1,1.0}` at 200ep (504 runs each). Per-series best over
+the grid, collection mean:
+
+| collection | RW-1 best | P1 | P2 | P3 | P4 (wb) | **P5** |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | 0.639 | 0.559 | 0.532 | 0.524 | 0.574 | 0.595 |
+| OPPORTUNITY | 0.138 | 0.608 | 0.608 | 0.602 | 0.530 | 0.608 |
+| CreditCard | 0.111 | 0.173 | 0.173 | 0.173 | 0.173 | 0.173 |
+| TAO | 0.995 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| PSM | 0.137 | 0.168 | 0.155 | 0.157 | 0.172 | 0.166 |
+| MSL | 0.131 | 0.178 | 0.176 | 0.162 | 0.187 | **0.210** |
+| SWaT | 0.444 | 0.536 | 0.537 | 0.513 | 0.498 | 0.535 |
+| **MEAN(7)** | **0.371** | **0.460** | 0.454 | 0.447 | 0.448 | **0.470** |
+
+- **The five gates cluster within ~0.02 (0.447–0.470)** → the choice of gate is second-order;
+  `cr` and `l1` are what move the number. P5 stays the best single gate (0.470), P1 second.
+- **P4's docx write-back (`gradnorm_wb`) runs cleanly but adds no aggregate lift** — mid-pack
+  at 0.448, below P1/P5.
+- **Like-for-like caveat**: RW-1 best-HP swept `l1` only, so the uniform 6/7 "wins" is inflated
+  by the extra `cr` axis given to P1–P5, not by the gates. The honest reading: gate contribution
+  ≈ 0; almost all the gain is from tuning `correction_rate`. Fair next step = give RW-1 the same
+  cr × l1 sweep.
+- **P5 full-200** (per-file best over cr × l1): mean AUC-PR **0.364** (199 series) vs thesis
+  RW-1 0.28 — an oracle upper bound, RW-1 not re-run on full-200 under the same grid.
+
+Figure `figures/crtune_rerank.png`; wandb run `crtune-rerank-P1toP5` (group `crtune_rerank`);
+reproducible via `experiments/proposals/log_crtune_rerank.py`.
