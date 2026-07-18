@@ -213,12 +213,35 @@ the grid, collection mean:
   `cr` and `l1` are what move the number. P5 stays the best single gate (0.470), P1 second.
 - **P4's docx write-back (`gradnorm_wb`) runs cleanly but adds no aggregate lift** — mid-pack
   at 0.448, below P1/P5.
-- **Like-for-like caveat**: RW-1 best-HP swept `l1` only, so the uniform 6/7 "wins" is inflated
-  by the extra `cr` axis given to P1–P5, not by the gates. The honest reading: gate contribution
-  ≈ 0; almost all the gain is from tuning `correction_rate`. Fair next step = give RW-1 the same
-  cr × l1 sweep.
-- **P5 full-200** (per-file best over cr × l1): mean AUC-PR **0.364** (199 series) vs thesis
-  RW-1 0.28 — an oracle upper bound, RW-1 not re-run on full-200 under the same grid.
+- **Like-for-like caveat**: the table above is an *oracle* (per-series best) vs our own
+  cr=0.1-fixed reproduction, so the uniform 6/7 is inflated by the extra `cr` axis, not the gates.
 
-Figure `figures/crtune_rerank.png`; wandb run `crtune-rerank-P1toP5` (group `crtune_rerank`);
-reproducible via `experiments/proposals/log_crtune_rerank.py`.
+### Deployable single-config vs thesis RW 1 (the honest comparison)
+Fixing both issues with **no new runs** — (a) one deployable `(cr,l1)` per proposal, (b) Baldo's
+properly-tuned **RW 1** (thesis Table 6.2) as baseline instead of our cr-fixed reproduction:
+
+| collection | thesis RW 1 | P1 | P2 | P3 | P4 (wb) | P5 |
+|---|:--:|:--:|:--:|:--:|:--:|:--:|
+| GECCO | **0.621** | 0.420 | 0.418 | 0.413 | 0.402 | 0.422 |
+| OPPORTUNITY | 0.059 | 0.608 | 0.608 | 0.602 | 0.520 | 0.608 |
+| CreditCard | 0.173 | 0.173 | 0.173 | 0.173 | 0.173 | 0.173 |
+| TAO | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 | 1.000 |
+| PSM | **0.238** | 0.152 | 0.151 | 0.151 | 0.155 | 0.152 |
+| MSL | 0.086 | 0.118 | 0.118 | 0.117 | 0.120 | 0.119 |
+| SWaT | 0.227 | 0.500 | 0.500 | 0.501 | 0.497 | 0.500 |
+| **MEAN(7)** | 0.343 | 0.424 | 0.424 | 0.422 | 0.409 | **0.425** |
+| **wins vs thesis** | — | 3/7 | 3/7 | 3/7 | 3/7 | 3/7 |
+
+- **The oracle 6/7 collapses to 3/7** (OPPORTUNITY, MSL, SWaT), losing GECCO + PSM, tying
+  CreditCard + TAO. Chosen config: P1/P2/P5 `cr0.001/l10.001`, P3/P4 `cr0.001/l10.1`.
+- **The two big wins are protocol-confounded, not gate gains**: for the *same* RW 1, thesis
+  reports SWaT 0.227 vs our gate-off reproduction 0.444, OPPORTUNITY 0.059 vs 0.138 — gaps that
+  exist before any gate. **Gate contribution ≈ 0**, matching the tight P1–P5 clustering.
+- **Honest headline:** `correction_rate` tuning moves the number; the CEGAR gate (any of P1–P5,
+  incl. P4's write-back) neither helps nor hurts on aggregate once HP + protocol are controlled.
+- **P5 full-200** (per-file best over cr × l1): mean AUC-PR **0.364** (199 series) vs thesis
+  RW-1 0.28 — an oracle upper bound; RW-1 not re-run on full-200 under the same grid.
+
+Figures `figures/crtune_rerank.png` (oracle) + `figures/crtune_fixed_vs_thesis.png` (deployable);
+wandb run `crtune-rerank-P1toP5` (group `crtune_rerank`); reproducible via
+`experiments/proposals/log_crtune_rerank.py`.
