@@ -6,8 +6,9 @@ on GECCO after P5 (fixed 0.599, auto-λ 0.628; Δ−0.040).**
 ## What Proposal 4 is (docx spec, amplification-only Stage-1)
 High residual AND gradient-correctable. `g_res=σ(k_r(robust_z(resid)−τ_r))`,
 `h_t=‖∂loss/∂input‖` (extra fwd+bwd per batch), `g_grad=σ(k_h(robust_z(h_t)−τ_h))`,
-`g=g_res·g_grad`. `benefit` variant uses loss-reduction instead of ‖grad‖. Docx write-back
-not implemented (amplification only). Score = `mean|correction|`.
+`g=g_res·g_grad`. `benefit` variant uses loss-reduction instead of ‖grad‖. Score =
+`mean|correction|`. *(Screening was amplification-only; the docx correctable-point write-back
+was implemented later as the `gradnorm_wb` variant — see the Update section at the bottom.)*
 
 ## Experiment settings
 | group | values |
@@ -121,3 +122,29 @@ cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
 sbatch experiments/proposals/runs/submit_p4_coll.sh
 python experiments/proposals/aggregate_collection.py --proposal 4
 ```
+
+## Update — cr × l1 re-ranking (post-screening)
+The table above is the **initial fail-fast screening** (fixed `correction_rate=0.1`, 100ep,
+gate on after warm-up, indicative baseline). A later sweep re-ran P4 over
+`cr∈{0.001,0.01,0.1} × l1∈{0.001,0.01,0.1,1.0}` at 200ep (in the now-implemented `gradnorm_wb` **write-back** variant — the docx correctable-point write-back that was *not* implemented during screening). `correction_rate` turned out to
+be a dominant, collection-dependent knob that the fixed 0.1 mis-set for most collections.
+
+**Oracle** (per-series best over the grid, collection mean — over-optimistic upper bound, vs our
+cr=0.1-fixed reproduction RW-1):
+
+| method | GECCO | OPP | CC | TAO | PSM | MSL | SWaT | MEAN(7) | wins |
+|---|--|--|--|--|--|--|--|--|--|
+| P4-dualgrad(wb) | 0.574 | 0.530 | 0.173 | 1.000 | 0.172 | 0.187 | 0.498 | **0.448** | 6/7 |
+
+**Deployable** (one fixed config `cr0.001/l10.1`) vs **Baldo thesis RW 1** (Table 6.2, properly tuned):
+
+| method | GECCO | OPP | CC | TAO | PSM | MSL | SWaT | MEAN(7) | wins |
+|---|--|--|--|--|--|--|--|--|--|
+| thesis RW 1 | 0.621 | 0.059 | 0.173 | 1.000 | 0.238 | 0.086 | 0.227 | 0.343 | — |
+| P4-dualgrad(wb) | 0.402 | 0.520 | 0.172 | 1.000 | 0.155 | 0.120 | 0.497 | **0.409** | 3/7 |
+
+**Takeaway:** the oracle 6/7 collapses to **3/7** under one deployable config,
+and the remaining wins (OPPORTUNITY/SWaT) are protocol-confounded (same RW 1: thesis SWaT 0.227
+vs our gate-off reproduction 0.444). So this gate's own contribution is **≈ 0** — all five
+proposals cluster at 0.41–0.43. See `SUMMARY.md` and `proposal5_tune_results.md` for the full
+P1–P5 comparison; figures `figures/crtune_rerank.png` + `figures/crtune_fixed_vs_thesis.png`.

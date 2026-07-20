@@ -136,3 +136,29 @@ cd /ocean/projects/cis260190p/yhwang2/rwml-autocegar
 sbatch experiments/proposals/runs/submit_p1_coll.sh
 python experiments/proposals/aggregate_collection.py --proposal 1
 ```
+
+## Update — cr × l1 re-ranking (post-screening)
+The table above is the **initial fail-fast screening** (fixed `correction_rate=0.1`, 100ep,
+gate on after warm-up, indicative baseline). A later sweep re-ran P1 over
+`cr∈{0.001,0.01,0.1} × l1∈{0.001,0.01,0.1,1.0}` at 200ep. `correction_rate` turned out to
+be a dominant, collection-dependent knob that the fixed 0.1 mis-set for most collections.
+
+**Oracle** (per-series best over the grid, collection mean — over-optimistic upper bound, vs our
+cr=0.1-fixed reproduction RW-1):
+
+| method | GECCO | OPP | CC | TAO | PSM | MSL | SWaT | MEAN(7) | wins |
+|---|--|--|--|--|--|--|--|--|--|
+| P1-residual | 0.559 | 0.608 | 0.173 | 1.000 | 0.168 | 0.178 | 0.536 | **0.460** | 6/7 |
+
+**Deployable** (one fixed config `cr0.001/l10.001`) vs **Baldo thesis RW 1** (Table 6.2, properly tuned):
+
+| method | GECCO | OPP | CC | TAO | PSM | MSL | SWaT | MEAN(7) | wins |
+|---|--|--|--|--|--|--|--|--|--|
+| thesis RW 1 | 0.621 | 0.059 | 0.173 | 1.000 | 0.238 | 0.086 | 0.227 | 0.343 | — |
+| P1-residual | 0.420 | 0.608 | 0.173 | 1.000 | 0.152 | 0.118 | 0.500 | **0.424** | 3/7 |
+
+**Takeaway:** the oracle 6/7 collapses to **3/7** under one deployable config,
+and the remaining wins (OPPORTUNITY/SWaT) are protocol-confounded (same RW 1: thesis SWaT 0.227
+vs our gate-off reproduction 0.444). So this gate's own contribution is **≈ 0** — all five
+proposals cluster at 0.41–0.43. See `SUMMARY.md` and `proposal5_tune_results.md` for the full
+P1–P5 comparison; figures `figures/crtune_rerank.png` + `figures/crtune_fixed_vs_thesis.png`.
