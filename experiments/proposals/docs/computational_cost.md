@@ -18,6 +18,11 @@ dataset) cell. Host: PSC Bridges-2 GPU nodes (shared).
 | ratio vs P1 (per-dataset mean) | 1.00 | 1.06 | 0.68 | 0.89 | 0.99 |
 | auto-lambda / fixed ratio | 0.99 | 0.96 | 1.01 | 0.98 | 0.96 |
 
+All ratio rows in this doc are means of PER-DATASET ratios (each dataset's
+proposal/baseline ratio, then averaged), not ratios of the mean rows - so
+dividing two "mean s/run" cells will not reproduce them. Per-dataset ratios
+weight every dataset equally instead of letting the longest runs dominate.
+
 ## vs plain RW-1 (the baseline)
 
 The gate-off control runs from the P2 phase (`RW1m-*`, plain RW-1, 100 ep, same
