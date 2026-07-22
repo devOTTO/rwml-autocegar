@@ -204,6 +204,10 @@ class CNN_RW_CEGAR_HookBase(CNN_RW):
         # ground-truth labels) and whether correction concentrated there.
         gate_accum = np.zeros(total_length, dtype=np.float64)
         gate_count = np.zeros(total_length, dtype=np.float64)
+        # per-factor maps (same scatter as the gate): E (wrongness) and C
+        # (confidence) separately, so factor-level plots don't need re-training
+        wrong_accum = np.zeros(total_length, dtype=np.float64)
+        conf_accum = np.zeros(total_length, dtype=np.float64)
 
         for epoch in range(1, self.epochs + 1):
             warm = epoch <= self.warmup_epochs
@@ -255,6 +259,10 @@ class CNN_RW_CEGAR_HookBase(CNN_RW):
                         tgt = np.asarray(yb_idx).reshape(-1)
                         np.add.at(gate_accum, tgt, np.repeat(g_win.cpu().numpy(), self.pred_len))
                         np.add.at(gate_count, tgt, 1.0)
+                        e_win = E_t.clamp(0.0, 1.0).detach().cpu().numpy()
+                        c_win = confidence.clamp(0.0, 1.0).detach().cpu().numpy()
+                        np.add.at(wrong_accum, tgt, np.repeat(e_win, self.pred_len))
+                        np.add.at(conf_accum, tgt, np.repeat(c_win, self.pred_len))
                     # gate applied to the per-window RMSE GRADIENT via ScaleGrad
                     loss = ScaleGrad.apply(per_window_rmse, scale).mean()
 
@@ -328,6 +336,10 @@ class CNN_RW_CEGAR_HookBase(CNN_RW):
         #   gate_per_t       = mean gate activation on windows targeting that point
         self.correction_per_t = scores
         self.gate_per_t = gate_accum / np.maximum(gate_count, 1.0)
+        #   wrongness/confidence_per_t = the gate's two factors separately
+        #   (E and C of g = E*C), for factor-level diagnostics/plots
+        self.wrongness_per_t = wrong_accum / np.maximum(gate_count, 1.0)
+        self.confidence_per_t = conf_accum / np.maximum(gate_count, 1.0)
         # full correction tensor [feats, T] for original-vs-corrected example plots
         self.correction_full = correction.detach().cpu().numpy()[0]
         return scores

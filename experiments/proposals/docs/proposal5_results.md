@@ -67,6 +67,10 @@ ground-truth labels; labels are used for analysis only, never during training):
   normal timesteps. Since the anomaly score IS mean |correction|, this is the score
   contrast: e.g. a value of 10 means anomalous points end up with 10x more correction
   than normal points (higher = better separation = higher AUC-PR, all else equal).
+  Unit and timing, to be precise: computed per TIMESTEP over the whole series
+  (not per batch or per sample), post hoc on the final trained correction -
+  one ratio per series, then averaged over the collection. Labels are used
+  only for this split, never during training.
 - **Overlap (prec)**: thesis Sec. 8.4 definition. A point is "high-correction" when its
   |correction| exceeds the series' own 95th percentile (tau_C). Overlap = fraction of
   high-correction points that are true anomalies (precision of the correction).
