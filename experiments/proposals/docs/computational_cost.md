@@ -18,6 +18,29 @@ dataset) cell. Host: PSC Bridges-2 GPU nodes (shared).
 | ratio vs P1 (per-dataset mean) | 1.00 | 1.06 | 0.68 | 0.89 | 0.99 |
 | auto-lambda / fixed ratio | 0.99 | 0.96 | 1.01 | 0.98 | 0.96 |
 
+## vs plain RW-1 (the baseline)
+
+The gate-off control runs from the P2 phase (`RW1m-*`, plain RW-1, 100 ep, same
+pipeline) provide a measured baseline on 10 datasets shared with all five
+proposal groups (GECCO, CreditCard, OPPORTUNITY x8):
+
+| collection | RW-1 | P1 | P2 | P3 | P4 | P5 |
+|---|--:|--:|--:|--:|--:|--:|
+| CreditCard | 364 | 667 | 806 | 511 | 676 | 522 |
+| GECCO | 206 | 290 | 362 | 209 | 296 | 232 |
+| OPPORTUNITY | 62 | 104 | 98 | 69 | 94 | 71 |
+| mean s/run (10 datasets) | 106.9 | 178.7 | 195.1 | 127.5 | 172.0 | 132.0 |
+| **ratio vs RW-1** | **1.00** | **2.07** | **2.09** | **1.28** | **1.68** | **1.34** |
+
+So gating costs roughly **1.3x to 2.1x plain RW-1 wall-clock**. The split is
+instructive: P1/P2 (the `rw_cegar` base) pay ~2x because that base recomputes
+buffer statistics (residual quantiles etc.) every batch, while P3/P5 (the hooks
+base) only look up a precomputed epoch-end map in-batch and land at ~1.3x. P4
+adds its extra forward+backward on top of a map-free in-batch gate (~1.7x). In
+other words the overhead is dominated by the per-batch statistics machinery,
+not by the gate math itself, and stays within the same order of magnitude as
+RW-1 in every case.
+
 Per-collection mean seconds (fixed lambda, 100 ep):
 
 | collection | P1 | P2 | P3 | P4 | P5 |
@@ -74,10 +97,14 @@ the correction update itself is one RMSprop step per epoch, O(T x feats).
 - One run per cell, no seeds; memory sampled at 30 s intervals (short runs can
   miss the true peak); GECCO runs synced without system metrics, hence sampled
   on OPPORTUNITY / CreditCard / SWaT instead.
-- The reliable conclusions are the coarse ones: **all five gates stay in the
-  same cost class as plain RW-1** (same order of magnitude in time, same memory
-  footprint), **auto-lambda is free** (ratio ~1.0), and no proposal requires
-  hardware beyond what RW-1 already needs.
+- The RW-1 baseline runs (`RW1m-*`) come from the P2 phase, so they too landed
+  on different nodes than the proposal runs; the 1.3-2.1x ratios carry the same
+  scheduling noise as the cross-proposal ratios.
+- The reliable conclusions are the coarse ones: **gating costs ~1.3-2.1x plain
+  RW-1 wall-clock** (P3/P5 cheapest, P1/P2 priciest via per-batch statistics),
+  **all five stay in the same cost class** (same order of magnitude, same
+  memory footprint), **auto-lambda is free** (ratio ~1.0), and no proposal
+  requires hardware beyond what RW-1 already needs.
 
 ## Reproduce
 
