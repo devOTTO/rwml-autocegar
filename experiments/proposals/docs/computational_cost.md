@@ -31,6 +31,15 @@ proposal groups (GECCO, CreditCard, OPPORTUNITY x8):
 | OPPORTUNITY | 62 | 104 | 98 | 69 | 94 | 71 |
 | mean s/run (10 datasets) | 106.9 | 178.7 | 195.1 | 127.5 | 172.0 | 132.0 |
 | **ratio vs RW-1** | **1.00** | **2.07** | **2.09** | **1.28** | **1.68** | **1.34** |
+| **overhead vs RW-1** | - | **+107%** | **+109%** | **+28%** | **+68%** | **+34%** |
+
+**vs DeepAnT**: not measured - the DeepAnT reproduction predates the wandb
+tracking, so no runtimes were logged (and none exist in its result CSVs).
+Qualitatively, RW-1 is DeepAnT's CNN plus the correction machinery (a
+corrected-input forward and one RMSprop step per epoch), so RW-1's wall-clock
+is a small constant factor above DeepAnT's; the gate overheads above stack on
+top of that. Measuring it exactly would need re-running the DeepAnT
+reproduction (`deepant/reproduction/submit_cnn.sh`) with tracking enabled.
 
 So gating costs roughly **1.3x to 2.1x plain RW-1 wall-clock**. The split is
 instructive: P1/P2 (the `rw_cegar` base) pay ~2x because that base recomputes
