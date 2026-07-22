@@ -50,17 +50,19 @@ other words the overhead is dominated by the per-batch statistics machinery,
 not by the gate math itself, and stays within the same order of magnitude as
 RW-1 in every case.
 
-Per-collection mean seconds (fixed lambda, 100 ep):
+Per-collection mean seconds (fixed lambda, 100 ep). The RW-1 column is the
+gate-off baseline (`RW1m-*`); RW-1 was only run on GECCO / CreditCard /
+OPPORTUNITY, so `-` marks collections with no RW-1 control:
 
-| collection | P1 | P2 | P3 | P4 | P5 |
-|---|--:|--:|--:|--:|--:|
-| CreditCard | 667 | 806 | 511 | 676 | 522 |
-| GECCO | 290 | 362 | 209 | 296 | 232 |
-| MSL | 12 | 14 | 8 | 10 | 14 |
-| OPPORTUNITY | 104 | 98 | 69 | 94 | 71 |
-| PSM | 484 | 573 | 381 | 495 | 398 |
-| SWaT | 624 | 710 | 512 | 628 | 517 |
-| TAO | 42 | 27 | 17 | 23 | 18 |
+| collection | RW-1 | P1 | P2 | P3 | P4 | P5 |
+|---|--:|--:|--:|--:|--:|--:|
+| CreditCard | 364 | 667 | 806 | 511 | 676 | 522 |
+| GECCO | 206 | 290 | 362 | 209 | 296 | 232 |
+| MSL | - | 12 | 14 | 8 | 10 | 14 |
+| OPPORTUNITY | 62 | 104 | 98 | 69 | 94 | 71 |
+| PSM | - | 484 | 573 | 381 | 495 | 398 |
+| SWaT | - | 624 | 710 | 512 | 628 | 517 |
+| TAO | - | 42 | 27 | 17 | 23 | 18 |
 
 ## Peak memory (sampled runs)
 
@@ -68,20 +70,25 @@ Peak over the run, from the wandb system stream (30 s sampling). Values are
 per-GPU allocated bytes and process RSS; on shared nodes the GPU figure can
 include co-tenants, so read it as an upper bound.
 
-| dataset | | P1 | P2 | P3 | P4 | P5 |
-|---|---|--:|--:|--:|--:|--:|
-| OPPORTUNITY id1 | GPU MB | 713 | 715 | 765 | 746 | 715 |
-| | RSS MB | 1466 | 1469 | 1459 | 1446 | 1454 |
-| CreditCard id1 | GPU MB | 683 | 685 | 750 | 688 | 683 |
-| | RSS MB | 1559 | 1563 | 1575 | 1565 | 1586 |
-| SWaT id1 | GPU MB | 501 | 501 | 501 | 503 | 501 |
-| | RSS MB | 1369 | 1375 | 1393 | 1373 | 1373 |
+RW-1 is the gate-off baseline (`RW1m-*`); it has no run for SWaT id1, hence `-`.
 
-**Memory takeaway: the gates add essentially nothing.** Peaks differ by at most
-~70 MB GPU / ~30 MB RSS across proposals on the same dataset; the model, the
-correction tensor and the data loader dominate. P3 is the (slightly) heaviest
-because it keeps the previous epoch's correction and delta history (two extra
-O(T x feats) arrays).
+| dataset | | RW-1 | P1 | P2 | P3 | P4 | P5 |
+|---|---|--:|--:|--:|--:|--:|--:|
+| OPPORTUNITY id1 | GPU MB | 713 | 713 | 715 | 765 | 746 | 715 |
+| | RSS MB | 1337 | 1466 | 1469 | 1459 | 1446 | 1454 |
+| CreditCard id1 | GPU MB | 683 | 683 | 685 | 750 | 688 | 683 |
+| | RSS MB | 1454 | 1559 | 1563 | 1575 | 1565 | 1586 |
+| SWaT id1 | GPU MB | - | 501 | 501 | 501 | 503 | 501 |
+| | RSS MB | - | 1369 | 1375 | 1393 | 1373 | 1373 |
+
+**Memory takeaway: the gates add essentially nothing over RW-1.** On GPU, P1/P2/P5
+match plain RW-1 exactly (683 / 713 MB); only P3 rises ~50-70 MB (its two extra
+O(T x feats) history arrays) and P4 ~30 MB. RSS sits ~100-130 MB above RW-1, but
+that gap is roughly constant across all five proposals (the corrected-input
+buffers and data loader, not the gate) — so it is an RW-1-vs-proposal pipeline
+cost, not a gate cost. Across proposals on the same dataset peaks differ by at
+most ~70 MB GPU / ~30 MB RSS. The model, the correction tensor and the loader
+dominate; no proposal needs more memory headroom than RW-1.
 
 ## Where the extra computation actually is (mechanism)
 

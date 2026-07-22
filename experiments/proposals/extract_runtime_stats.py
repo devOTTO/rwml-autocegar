@@ -19,14 +19,28 @@ ENTITY_PROJECT = "yoonmeeh-cmu/rwml-autocegar"
 MEM_SAMPLE_DATASETS = ("opportunity_id1", "creditcard_id1", "swat_id1")
 
 
-def pull_rw1_baseline(api):
-    """Plain gate-off RW-1 control runs from the P2 phase (RW1m-*, 100 ep)."""
-    rw = {}
+def pull_rw1_rows(api):
+    """Plain gate-off RW-1 control runs from the P2 phase (RW1m-*, 100 ep).
+
+    Returns one row per run (dataset, collection, runtime, id) so the same pull
+    feeds the runtime baseline, the per-collection baseline, AND the memory
+    baseline. RW-1 was only run on GECCO / CreditCard / OPPORTUNITY (+ SMAP),
+    so it is a partial baseline for the collection/memory tables."""
+    rows = []
     for r in api.runs(ENTITY_PROJECT, filters={"display_name": {"$regex": "^RW1m-"}}, per_page=100):
         rt = r.summary.get("_runtime")
         ds = r.config.get("dataset")
         if rt and ds and r.config.get("epochs") == 100:
-            rw.setdefault(ds, []).append(float(rt))
+            rows.append({"dataset": ds, "collection": r.config.get("collection"),
+                         "runtime": float(rt), "id": r.id})
+    return rows
+
+
+def pull_rw1_baseline(api, rw_rows=None):
+    """Per-dataset mean RW-1 runtime (backward-compatible dict form)."""
+    rw = defaultdict(list)
+    for r in (rw_rows if rw_rows is not None else pull_rw1_rows(api)):
+        rw[r["dataset"]].append(r["runtime"])
     return {k: mean(v) for k, v in rw.items()}
 
 
@@ -58,8 +72,8 @@ def _per_dataset_means(rows, lam_mode="fixed"):
     return {k: mean(v) for k, v in d.items()}
 
 
-def _report_rw1_baseline(per, shared, api):
-    rw = pull_rw1_baseline(api)
+def _report_rw1_baseline(per, shared, rw_rows):
+    rw = pull_rw1_baseline(None, rw_rows)
     rw_shared = shared & set(rw)
     if not rw_shared:
         return
@@ -69,14 +83,21 @@ def _report_rw1_baseline(per, shared, api):
           {p: round(mean(per[p][d] / rw[d] for d in rw_shared), 2) for p in per})
 
 
-def _report_collections(per, shared, data):
+def _report_collections(per, shared, data, rw_rows):
     coll = {r["dataset"]: r["collection"] for r in data[1]}
     by_coll = defaultdict(lambda: defaultdict(list))
     for p in per:
         for d in shared:
             by_coll[coll[d]][p].append(per[p][d])
+    # RW-1 baseline per collection (partial: only the collections RW-1 was run on)
+    rw_coll = defaultdict(list)
+    for r in rw_rows:
+        if r["collection"]:
+            rw_coll[r["collection"]].append(r["runtime"])
+    print("per-collection mean s/run (RW-1 | P1..P5; '-' = no RW-1 run):")
     for c in sorted(by_coll):
-        print(f"{c:14s}" + "".join(f" {mean(by_coll[c][p]):6.0f}" for p in sorted(per)))
+        rw_val = f"{mean(rw_coll[c]):6.0f}" if c in rw_coll else f"{'-':>6s}"
+        print(f"{c:14s} {rw_val}" + "".join(f" {mean(by_coll[c][p]):6.0f}" for p in sorted(per)))
 
 
 def _report_auto_ratio(data):
@@ -89,19 +110,30 @@ def _report_auto_ratio(data):
                   f"{mean(au[d] / fx[d] for d in common):.2f} (n={len(common)})")
 
 
-def _report_memory(data, api):
+def _peak_mem(api, run_id):
+    ev = list(api.run(f"{ENTITY_PROJECT}/{run_id}").history(stream="events", pandas=False))
+    if not ev:
+        return None
+    gpu = max((e.get("system.gpu.0.memoryAllocatedBytes") or 0) for e in ev) / 1e6
+    rss = max((e.get("system.proc.memory.rssMB") or 0) for e in ev)
+    return gpu, rss
+
+
+def _report_memory(data, api, rw_rows):
     print("\npeak memory samples (GPU MB / RSS MB):")
+    # RW-1 baseline first (partial: only where an RW1m-* run exists for the dataset)
+    for want in MEM_SAMPLE_DATASETS:
+        pick = next((r for r in rw_rows if r["dataset"] == want), None)
+        m = _peak_mem(api, pick["id"]) if pick else None
+        print(f"  RW-1 {want}: " + (f"gpu={m[0]:.0f}MB rss={m[1]:.0f}MB" if m else "no RW1m run"))
     for p, rows in data.items():
         for want in MEM_SAMPLE_DATASETS:
             pick = next((r for r in rows if r["dataset"] == want and r["lam_mode"] == "fixed"), None)
             if not pick:
                 continue
-            ev = list(api.run(f"{ENTITY_PROJECT}/{pick['id']}").history(stream="events", pandas=False))
-            if not ev:
-                continue
-            gpu = max((e.get("system.gpu.0.memoryAllocatedBytes") or 0) for e in ev) / 1e6
-            rss = max((e.get("system.proc.memory.rssMB") or 0) for e in ev)
-            print(f"  P{p} {want}: gpu={gpu:.0f}MB rss={rss:.0f}MB")
+            m = _peak_mem(api, pick["id"])
+            if m:
+                print(f"  P{p} {want}: gpu={m[0]:.0f}MB rss={m[1]:.0f}MB")
 
 
 def report(data, api):
@@ -109,15 +141,16 @@ def report(data, api):
     shared = set.intersection(*[set(v) for v in per.values()])
     print(f"shared fixed/100ep datasets: {len(shared)}")
 
-    _report_rw1_baseline(per, shared, api)
+    rw_rows = pull_rw1_rows(api)
+    _report_rw1_baseline(per, shared, rw_rows)
 
     print("\nmean s/run:", {p: round(mean(per[p][d] for d in shared), 1) for p in per})
     print("median s/run:", {p: round(median(per[p][d] for d in shared), 1) for p in per})
     print("ratio vs P1:", {p: round(mean(per[p][d] / per[1][d] for d in shared), 2) for p in per})
 
-    _report_collections(per, shared, data)
+    _report_collections(per, shared, data, rw_rows)
     _report_auto_ratio(data)
-    _report_memory(data, api)
+    _report_memory(data, api, rw_rows)
 
 
 if __name__ == "__main__":
