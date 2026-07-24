@@ -70,6 +70,24 @@ The MC-dropout uncertainty gate is the weakest localizer (GECCO gate→label AUC
 random), so P2 lags the residual-based proposals on GECCO. Near-ties RW-1 on opportunity.
 Confirms the docx MC-dropout-miscalibration risk.
 
+### The confidence factor, measured (meeting follow-up)
+Definition: the confidence factor is the second sigmoid of the gate,
+`C = sigma(k_c*(tau_u - u_t))` with `u_t` = variance of the M=5 MC-dropout passes -
+it fires when the model's predictions are STABLE across passes ("confident").
+
+Measured per timestep in the final epoch (figures
+`P2_mc5_{gecco,opportunity}_confidence_factor.png`), the factor is not merely noisy
+but **inverted**: scored alone against the labels it gets **AUC 0.259 (GECCO) /
+0.202 (OPPORTUNITY)**, well below the 0.5 of an uninformative signal. Mechanism:
+MC-dropout uncertainty is HIGH at anomalies (the model wobbles at strange inputs),
+so "fire when confident" fires at normal points instead; since `g = E x C`, the
+factor switches the gate off exactly where the wrongness factor aims - the measured
+cause of the 0.51 localization. Two notes: (1) all C <= 0.5 because `tau_u = 0`
+caps the sigmoid, as flagged in the settings; (2) the uncertainty signal itself is
+informative (inverted it would score ~0.74) - the confident-error framing simply
+uses it in the wrong direction on this detector, a sharper diagnosis than
+"miscalibrated".
+
 ## Decision
 Does not beat tuned RW-1; weakest gate → move to Proposal 3.
 
